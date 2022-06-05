@@ -1,14 +1,31 @@
 ﻿@page "/"
+@inject NavigationManager NavManager
 
 <p>Current count: @currentCount</p>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<button class="btn btn-primary" @onclick="changePage">Click me</button>
+
 
 @code {
+    // establish a server connection when the server code is complete.
+    // request the current active apps and their minimized state to make the list of active apps
+
+    public Dictionary<string, int> runningProcesses = new Dictionary<string, int>();
+
     private int currentCount = 0;
+
+
 
     private void IncrementCount()
     {
         currentCount++;
     }
+
+    private void changePage()
+    {
+        NavManager.NavigateTo("/test");
+    }
+
+    
+
 }

@@ -3,7 +3,7 @@
 <link href="css/app.css" rel="stylesheet" />
 
 
-<div>
+<div class="nav">
     <ul class="flex-row">
         <li class="tab-section to-left">
             <Microsoft.AspNetCore.Components.Routing.NavLink class="nav-link home-link" href="" Match = "Microsoft.AspNetCore.Components.Routing.NavLinkMatch.All">
@@ -11,16 +11,17 @@
             </Microsoft.AspNetCore.Components.Routing.NavLink>
             <div class="button-title home-title">Home</div>
         </li>
-        <li class="tab-section">
+        <li class="tab-section to-mid">
             <Microsoft.AspNetCore.Components.Routing.NavLink class="nav-link history-link" href="test">
-                <img src="images/history-icon.png" alt="history-icon" class="icon"/>
+                <img src="images/history-icon.png" alt="history-icon" class="icon" id="history-img"/>
             </Microsoft.AspNetCore.Components.Routing.NavLink>
             <div class="button-title history-title">App History</div>
         </li>
         <li class="tab-section to-right">
-            <Microsoft.AspNetCore.Components.Routing.NavLink class="nav-link recommendations-link" href="test">
+            <Microsoft.AspNetCore.Components.Routing.NavLink class="nav-link suggestions-link" href="test">
                 
             </Microsoft.AspNetCore.Components.Routing.NavLink>
+            <div class="button-title suggestions-title">Suggestions</div>
         </li>
     </ul>
 </div>
