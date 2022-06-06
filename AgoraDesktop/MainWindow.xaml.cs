@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -24,6 +25,7 @@ namespace AgoraDesktop
     /// </summary>
     public partial class MainWindow : Window
     {
+        Hashtable currentNumProcesses = new Hashtable();
 
         // TODO: create a data type, most likely a hash table, to count the number of processes that share a name. This will be used
         //       so that the code knows when to send a request to the server to stop the application timer and add the time spent to the database.
@@ -50,7 +52,7 @@ namespace AgoraDesktop
         // of stored processes.
         void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
-
+            string processName = GetAppName(e.NewEvent.Properties["MainWindowTitle"].Value.ToString());
         }
 
         // Handler to be used when a process is stopped. Pass the process name to the server so that the server knows the app has been closed.
@@ -60,13 +62,23 @@ namespace AgoraDesktop
 
         }
 
+        // Check which processes are minimized on initialization.
+        // Create a method to check which processes are minimized (will be called be server every minute).
+
         // Method that should be run on start. Keep a data storage for the active processes so they can be passed to the server. Useful if the app
         // isn't being started on Windows login. When complete, send each unique process to the server.
         void getActiveProcesses()
         {
             foreach(Process p in Process.GetProcesses())
             {
-
+                try
+                {
+                    currentNumProcesses.Add(GetAppName(p.MainWindowTitle.ToString()), 1);
+                } catch
+                {
+                    currentNumProcesses[p.MainWindowTitle.ToString()] = (int)(currentNumProcesses[GetAppName(p.MainWindowTitle.ToString())]) + 1;
+                }
+                
             }
         }
         //method used to get the Application name of a process. Should have the stringified MainWindowTitle attribute passed in
