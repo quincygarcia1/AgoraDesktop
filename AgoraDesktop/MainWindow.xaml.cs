@@ -17,6 +17,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Toolkit.Uwp.Notifications;
 
 namespace AgoraDesktop
 {
@@ -46,24 +47,61 @@ namespace AgoraDesktop
             processStartEvent.Start();
             processStopEvent.EventArrived += new EventArrivedEventHandler(processStopEvent_EventArrived);
             processStopEvent.Start();
+
+            getActiveProcesses();
         }
 
         // Handler for when a process starts. Pass the process to the server so the server can start a timer for the process and can update the list
         // of stored processes.
         void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
-            string processName = GetAppName(e.NewEvent.Properties["MainWindowTitle"].Value.ToString());
+            
+            var processTitle = e.NewEvent.Properties["MainWindowTitle"].Value.ToString();
+            int pid = Convert.ToInt32(e.NewEvent.Properties["Id"].Value);
+            var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+
+            if (processTitle != "" && processTitle != null)
+            {
+                try
+                {
+                    currentNumProcesses.Add(pid, Tuple.Create(processName, processTitle));
+                }
+                catch
+                {
+                    //pass
+                }
+            }
+
+            // pass the data to the server to start the title
         }
 
         // Handler to be used when a process is stopped. Pass the process name to the server so that the server knows the app has been closed.
         // Note for later reference: in the server or through client side keep a count of how many processes are made for an app
         void processStopEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
+            var processTitle = e.NewEvent.Properties["MainWindowTitle"].Value.ToString();
+            int pid = Convert.ToInt32(e.NewEvent.Properties["Id"].Value);
+            var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
 
+            try
+            {
+                currentNumProcesses.Remove(pid);
+            }
+            catch
+            {
+                //pass
+            }
+
+            // Notify the server to stop the timer and record the usage 
         }
 
         // Check which processes are minimized on initialization.
         // Create a method to check which processes are minimized (will be called be server every minute).
+
+        private void checkMinimized()
+        {
+
+        }
 
         // Method that should be run on start. Keep a data storage for the active processes so they can be passed to the server. Useful if the app
         // isn't being started on Windows login. When complete, send each unique process to the server.
@@ -71,14 +109,19 @@ namespace AgoraDesktop
         {
             foreach(Process p in Process.GetProcesses())
             {
-                try
+                if (p.MainWindowTitle.ToString() != "")
                 {
-                    currentNumProcesses.Add(GetAppName(p.MainWindowTitle.ToString()), 1);
-                } catch
-                {
-                    currentNumProcesses[p.MainWindowTitle.ToString()] = (int)(currentNumProcesses[GetAppName(p.MainWindowTitle.ToString())]) + 1;
+                    try
+                    {
+                        currentNumProcesses.Add(p.Id, Tuple.Create(p.ProcessName.ToString(), p.MainWindowTitle.ToString()));
+
+                        // pass the info to the server for the start-up process
+                    }
+                    catch
+                    {
+                        //pass
+                    }
                 }
-                
             }
         }
         //method used to get the Application name of a process. Should have the stringified MainWindowTitle attribute passed in
@@ -97,5 +140,16 @@ namespace AgoraDesktop
 
         // TODO: Create a handler for the server when a time alert should be made. Time alerts should be made every 30 minutes that a
         //       program is minimized.
+
+        void createTimeAlert()
+        {
+            // Should be encapsulated in a method called by the server. Buttons will be added to the reminder as well to either dismiss, kill the process
+            // or kill the program
+            new ToastContentBuilder()
+                .AddArgument("action", "openApp")
+                .AddText("*App* has been running for *Time*")
+                .AddText("Manage your applications in Agora")
+                .Show();
+        }
     }
 }
