@@ -56,9 +56,9 @@ namespace AgoraDesktop
         void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
             
-            var processTitle = e.NewEvent.Properties["MainWindowTitle"].Value.ToString();
-            int pid = Convert.ToInt32(e.NewEvent.Properties["Id"].Value);
+            int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+            var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
 
             if (processTitle != "" && processTitle != null)
             {
@@ -79,9 +79,10 @@ namespace AgoraDesktop
         // Note for later reference: in the server or through client side keep a count of how many processes are made for an app
         void processStopEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
-            var processTitle = e.NewEvent.Properties["MainWindowTitle"].Value.ToString();
-            int pid = Convert.ToInt32(e.NewEvent.Properties["Id"].Value);
+
+            int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+            var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
 
             try
             {
