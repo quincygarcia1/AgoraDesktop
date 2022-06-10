@@ -38,6 +38,8 @@ namespace AgoraDesktop
 
             InitializeComponent();
 
+            this.Title = "Agora";
+
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddWpfBlazorWebView();
             Resources.Add("services", serviceCollection.BuildServiceProvider());
@@ -58,7 +60,13 @@ namespace AgoraDesktop
             
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+
             var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
+
+            if (processTitle == "Agora")
+            {
+                return;
+            }
 
             if (processTitle != "" && processTitle != null)
             {
@@ -82,7 +90,15 @@ namespace AgoraDesktop
 
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
+            try
+            {
+                var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
+            }
+            catch
+            {
+                return;
+            }
+            
 
             try
             {

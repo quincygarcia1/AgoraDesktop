@@ -17,7 +17,7 @@ namespace AgoraDesktop.Hubs
         // Dictionary within a dictionary. keeps the connection ID as a key and a dictionary within
         // PID key, list of process name, window name, timer, total time spent as the items within the second dictionary>
         
-        Dictionary<string, Dictionary<int, ArrayList>> connectedUsers = new Dictionary<string, Dictionary<int, ArrayList>>();
+        Dictionary<string, Dictionary<int, CustomCollection>> connectedUsers = new Dictionary<string, Dictionary<int, CustomCollection>>();
 
         // constant timer to be used to check whether processes are minimized.
         Timer minimizedTimer = new Timer(60000);
@@ -25,7 +25,7 @@ namespace AgoraDesktop.Hubs
 
         public async Task StartGlobalTimer()
         {
-            minimizedTimer.Interval = 1000;
+            minimizedTimer.Interval = 60000;
             minimizedTimer.Elapsed += SendUpdateRequest;
             minimizedTimer.AutoReset = true;
             minimizedTimer.Enabled = true;
@@ -34,11 +34,9 @@ namespace AgoraDesktop.Hubs
         // Method to notify a user that they've had an app minimized for a while
         public async Task NotifyUser(object sender, ElapsedEventArgs e, string connectionId, string processName, int pid, string appName)
         {
-
-            int currentTotal = (int)connectedUsers[connectionId][pid][3];
             // Increases the total timer by 30 minutes. Could change this at some point maybe
-            connectedUsers[connectionId][pid][3] = currentTotal += (1000 * 60 * 30);
-            await Clients.Client(connectionId).SendAsync("createTimeAlert", processName, pid, appName, connectedUsers[connectionId][pid][3]);
+            connectedUsers[connectionId][pid].TotalTime += (1000 * 60 * 30);
+            await Clients.Client(connectionId).SendAsync("createTimeAlert", processName, pid, appName, connectedUsers[connectionId][pid].TotalTime);
 
         }
 
@@ -46,20 +44,20 @@ namespace AgoraDesktop.Hubs
         public async Task AddCurrentProcess(string processName, int pid, string appName)
         {
             // Intializes the timer to 30 mins
-            Timer individualTimer = new Timer(1000 * 60 * 30);
+       
             // set the elapsed method. The NotifyUser method will need the connectionID as a precaution to know where to send the alert
             // The alert will also ask whether the user wants to close all the entire program <appName> or just the specific process <processName>.
             // The ID is passed to kill a single process if needed.
-            individualTimer.Elapsed += (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
-            individualTimer.AutoReset = true;
-            individualTimer.Enabled = true;
+            
+            
             if (connectedUsers.ContainsKey(Context.ConnectionId))
             {
-                connectedUsers[Context.ConnectionId].Add(pid, new ArrayList()
-                {
-                    processName, appName, individualTimer, 0
-                });
-
+                CustomCollection individualGroup = new CustomCollection(processName, appName);
+                individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
+                individualGroup.TimerAttribute.Enabled = true;
+                connectedUsers[Context.ConnectionId].Add(pid, individualGroup);
+                // Send to the client that a new process is there. This is to live update the home page
+                // for new active processes.
             }
             else
             {
@@ -89,11 +87,15 @@ namespace AgoraDesktop.Hubs
         {
             if (connectedUsers.ContainsKey(Context.ConnectionId))
             {
-                if (connectedUsers[Context.ConnectionId][pid][2] == typeof(Timer))
+                if (connectedUsers[Context.ConnectionId].ContainsKey(pid))
                 {
-                    // need to create a custom list type to fix this issue
-                    connectedUsers[Context.ConnectionId][pid][2].Elapsed -= (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
+                    connectedUsers[Context.ConnectionId][pid].TimerAttribute.Elapsed -= 
+                        (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
+                    connectedUsers[Context.ConnectionId][pid].StopTimer();
+                    connectedUsers[Context.ConnectionId].Remove(pid);
 
+                    // Send to the client that a process is gone. This is to live update the home page
+                    // for new active processes.
                 }
             }
             else
@@ -107,7 +109,54 @@ namespace AgoraDesktop.Hubs
         // Method to transfer the app history of a client. Make sure to add their current session activity to the total.
         public async Task GetClientAppHistory()
         {
-            
+            List<string> processNames = new List<string>();
+            List<string> appNames = new List<string>();
+
+            List<CustomCollection> sortedUserDict = SortCollections(Context.ConnectionId);
+
+            var keyList = connectedUsers[Context.ConnectionId].Keys.ToList();
+            for (int i = 0; i < keyList.Count; i++)
+            {
+
+            }
+        }
+
+        // Quicksort algorithm to sort the app usage times from least to greatest. Used to organize the user display.
+        internal List<CustomCollection> SortCollections(string connectionId)
+        {
+            Dictionary<int, CustomCollection> focus = connectedUsers[connectionId];
+            List<CustomCollection> listOfValues = focus.Values.ToList();
+            CustomCollection pivot = listOfValues[listOfValues.Count - 1];
+            return QuickSort(listOfValues.Count - 1, listOfValues, pivot);
+        }
+
+        internal List<CustomCollection> QuickSort(int endIndex, List<CustomCollection> collection, CustomCollection pivot)
+        {
+            if (collection.Count <= 1)
+            {
+                return collection;
+            }
+            List<CustomCollection> smaller = new List<CustomCollection>;
+            List<CustomCollection > larger = new List<CustomCollection>();
+
+            for (int i = 0; i < endIndex; i++)
+            {
+                if (collection[i].TotalTime < pivot.TotalTime)
+                {
+                    smaller.Add(collection[i]);
+                } else
+                {
+                    larger.Add(collection[i]);
+                }
+            }
+            List<CustomCollection> pivotList = new List<CustomCollection> { pivot };
+            List<CustomCollection> result = new List<CustomCollection>(smaller.Count + pivotList.Count + larger.Count);
+            List<CustomCollection> smallerRes = QuickSort(smaller.Count - 1, smaller, smaller[smaller.Count - 1]);
+            List<CustomCollection> largerRes = QuickSort(larger.Count - 1, larger, larger[larger.Count - 1]);
+            result.AddRange(largerRes);
+            result.AddRange(pivotList);
+            result.AddRange(smallerRes);
+            return result.ToList();
         }
 
         // Gets the timers for all the current processes. To be displayed on the home page.
