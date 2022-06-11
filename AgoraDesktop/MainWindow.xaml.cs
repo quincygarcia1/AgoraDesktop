@@ -61,8 +61,15 @@ namespace AgoraDesktop
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
 
-            var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
-
+            string processTitle;
+            try
+            {
+                processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
+            }
+            catch
+            {
+                return;
+            }
             if (processTitle == "Agora")
             {
                 return;

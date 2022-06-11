@@ -1,4 +1,4 @@
-﻿@page "/"
+﻿@page "/count"
 @inject NavigationManager NavManager
 
 <p>Current count: @currentCount</p>
@@ -9,6 +9,7 @@
 @code {
     // establish a server connection when the server code is complete.
     // request the current active apps and their minimized state to make the list of active apps
+    
 
     public Dictionary<string, int> runningProcesses = new Dictionary<string, int>();
 

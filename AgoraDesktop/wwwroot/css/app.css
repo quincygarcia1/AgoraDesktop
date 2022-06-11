@@ -1,5 +1,10 @@
-﻿html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+﻿@font-face {
+    font-family: Nunito;
+    src: url(../Font/Nunito-VariableFont_wght.ttf);
+}
+
+html, body {
+    font-family: Nunito;
     background-color: #fef9f5;
 }
 
@@ -129,6 +134,15 @@ flex-row:first-child {
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
+}
+
+.login-field{
+    border:hidden;
+}
+
+.login-form {
+    vertical-align:middle;
+    
 }
 
 .invalid {

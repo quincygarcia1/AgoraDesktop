@@ -80,6 +80,11 @@ namespace AgoraDesktop.Hubs
 
         }
 
+        public void updateMinimizedForUser(int pid)
+        {
+            // Method to be used to update a program to the "minimized status". To be implemented later.
+        }
+
 
         // Method to be called when a user stops an application on their computer. Stop the process clock
         // and properly update the user's lifetime app history
@@ -109,16 +114,7 @@ namespace AgoraDesktop.Hubs
         // Method to transfer the app history of a client. Make sure to add their current session activity to the total.
         public async Task GetClientAppHistory()
         {
-            List<string> processNames = new List<string>();
-            List<string> appNames = new List<string>();
-
-            List<CustomCollection> sortedUserDict = SortCollections(Context.ConnectionId);
-
-            var keyList = connectedUsers[Context.ConnectionId].Keys.ToList();
-            for (int i = 0; i < keyList.Count; i++)
-            {
-
-            }
+            
         }
 
         // Quicksort algorithm to sort the app usage times from least to greatest. Used to organize the user display.
@@ -136,7 +132,7 @@ namespace AgoraDesktop.Hubs
             {
                 return collection;
             }
-            List<CustomCollection> smaller = new List<CustomCollection>;
+            List<CustomCollection> smaller = new List<CustomCollection>();
             List<CustomCollection > larger = new List<CustomCollection>();
 
             for (int i = 0; i < endIndex; i++)
@@ -162,7 +158,17 @@ namespace AgoraDesktop.Hubs
         // Gets the timers for all the current processes. To be displayed on the home page.
         public async Task GetCurrentApplications()
         {
-            
+            List<string> processNames = new List<string>();
+            List<string> appNames = new List<string>();
+
+            List<CustomCollection> sortedUserDict = SortCollections(Context.ConnectionId);
+
+            for (int i = 0; i < sortedUserDict.Count; i++)
+            {
+                processNames.Add(sortedUserDict[i].ProcessName);
+                appNames.Add(sortedUserDict[i].WindowName);
+            }
+            await Clients.Client(Context.ConnectionId).SendAsync("displayAppHistory", processNames, appNames);
         }
 
         // Check client login information through a database. Create a new space in the collection for the client and their connection ID
