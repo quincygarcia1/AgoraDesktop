@@ -145,6 +145,53 @@ flex-row:first-child {
     
 }
 
+.login-text {
+    font-weight: bolder;
+    font-size: 400%;
+    color: #b50000;
+    margin-bottom:5px;
+}
+
+.field-section:not(:last-of-type){
+    margin-bottom:5px;
+}
+
+
+
+.submit {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 103%;
+    color: gray;
+    border: solid 5px;
+    border-radius: 12px;
+    border-color: #b50000;
+    background-color: #fef9f5;
+}
+
+.submit:hover {
+    border-color: #dadada;
+}
+
+.password-box{
+    margin-left:8px;
+}
+
+.username-box {
+    margin-left:5px;
+}
+
+.input-field {
+    border: solid 2px;
+    border-color: #dadada;
+    border-radius: 5px;
+    padding: 3px 4px;
+}
+
+.input-field:focus {
+    border-color: #d0d0d0;
+}
+
 .invalid {
     outline: 1px solid red;
 }

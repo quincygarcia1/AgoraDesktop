@@ -1,20 +1,31 @@
 ﻿@page "/"
 @layout EmptyLayout
 
-<form method="post" class="login-form">
-    <fieldset class="login-field">
-        <legend>Login</legend>
-        <div>
-            <label for="Username">Username:</label>
-            <input type="text" name="Username" value="" />
+<div class="login-form">
+    <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <legend class="login-text">Login</legend>
+        <div class="field-section">
+            <label>Username:</label><InputText class="input-field username-box" @bind-Value="formModel.Username" />
         </div>
-        <div>
-            <label for="Password">Password:</label>
-            <input type="text" name="Password" value="" />
+    
+        <div class="field-section">
+            <label>Password:</label><InputText class="input-field password-box" @bind-Value="formModel.Password" />
         </div>
-        <div>
-            <label>&nbsp;</label>
-            <input type="submit" value="Submit" class="submit" />
-        </div>
-    </fieldset>
-</form>
+    
+
+        <button class="submit" type="submit" style="margin-right:10px; display:flex;">Login</button>
+
+    </EditForm>
+</div>
+
+@code{
+    private FormModel formModel = new();
+
+    private void HandleSubmit()
+    {
+        
+    }
+}
