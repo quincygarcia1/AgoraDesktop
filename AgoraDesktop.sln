@@ -5,6 +5,8 @@ VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDesktop", "AgoraDesktop\AgoraDesktop.csproj", "{A80DB2A2-EF5F-4486-B4C2-D55661341087}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A80DB2A2-EF5F-4486-B4C2-D55661341087}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A80DB2A2-EF5F-4486-B4C2-D55661341087}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A80DB2A2-EF5F-4486-B4C2-D55661341087}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
