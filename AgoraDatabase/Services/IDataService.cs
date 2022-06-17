@@ -10,12 +10,12 @@ namespace AgoraDatabase.Services
     {
         Task<IEnumerable<T>> GetAll();
 
-        Task<T> Get(int id);
+        Task<T> Get(string userName);
 
         Task<T> Create(T identity);
 
-        Task<T> Update(int id, T entity);
+        Task<T> Update(string newActivityString, T entity);
 
-        Task<bool> Delete(int id);
+        Task<bool> Delete(string userName);
     }
 }

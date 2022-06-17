@@ -5,16 +5,17 @@ using System.Text;
 using System.Threading.Tasks;
 using System.ComponentModel.DataAnnotations;
 
-namespace AgoraDesktop.Pages
+namespace AgoraDesktop.Pages.Models
 {
-    internal class FormModel
+    internal class LoginModel
     {
         [Required]
-        [StringLength(20, ErrorMessage = "Username too long.")]
+        [MaxLength(20, ErrorMessage = "Username too long.")]
         public string? Username { get; set; }
 
         [Required]
-        [StringLength(30, ErrorMessage = "Password too long.")]
+        [MaxLength(30, ErrorMessage = "Password too long.")]
+        [MinLength(8, ErrorMessage = "Password too short.")]
         public string? Password { get; set; }
     }
 }

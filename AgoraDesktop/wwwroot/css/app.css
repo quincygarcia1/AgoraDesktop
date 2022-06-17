@@ -5,7 +5,7 @@
 
 html, body {
     font-family: Nunito;
-    background-color: #fef9f5;
+    background-color: #f2f2f2;
 }
 
 .flex-row {
@@ -166,7 +166,7 @@ flex-row:first-child {
     border: solid 5px;
     border-radius: 12px;
     border-color: #b50000;
-    background-color: #fef9f5;
+    background-color: white;
 }
 
 .submit:hover {

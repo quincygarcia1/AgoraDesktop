@@ -5,7 +5,7 @@ VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDesktop", "AgoraDesktop\AgoraDesktop.csproj", "{A80DB2A2-EF5F-4486-B4C2-D55661341087}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
