@@ -14,7 +14,7 @@
         </div>
     
         <div class="field-section">
-            <label>Password:</label><InputText class="input-field password-box" @bind-Value="formModel.Password" />
+            <label>Password:</label><InputText class="input-field password-box" type="password" @bind-Value="formModel.Password" />
         </div>
     
 
@@ -22,15 +22,18 @@
         <button class="submit" @onclick="GoToRegister" style="margin-right:10px; display:inline;">Register</button>
 
     </EditForm>
-
     
 </div>
 
 @code{
+    private IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
     private LoginModel formModel = new();
+
 
     private void HandleSubmit()
     {
+        NavManager.NavigateTo("/test");
+        UserData foundUser = dbService.Get(formModel.Username).Result;
 
     }
 

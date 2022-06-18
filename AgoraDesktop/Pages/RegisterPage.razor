@@ -14,11 +14,11 @@
         </div>
     
         <div class="field-section">
-            <label>Password:</label><InputText class="input-field password-box" @bind-Value="formModel.Password" />
+            <label>Password:</label><InputText class="input-field password-box" type="password" @bind-Value="formModel.Password" />
         </div>
 
         <div class="field-section">
-            <label>Confirm Password:</label><InputText class="input-field password-box" @bind-Value="formModel.ConfirmPassword" />
+            <label>Confirm Password:</label><InputText class="input-field password-box" type="password" @bind-Value="formModel.ConfirmPassword" />
         </div>
     
 
@@ -28,12 +28,18 @@
 </div>
 
 @code {
-
+    // Create a way to communicate with the database
+    private IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
+    // Create the model for the register form
     private RegisterModel formModel = new();
 
     private void HandleSubmit()
     {
 
+        // Causes deadlock. Need to change the data service methods to not conflict with the UI
+        dbService.Create(new UserData { UserName = formModel.Username, Password = formModel.Password, ActivityString = "" }).Wait();
+        
+        NavManager.NavigateTo("/");
     }
 
     

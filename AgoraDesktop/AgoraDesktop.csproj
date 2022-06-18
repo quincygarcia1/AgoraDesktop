@@ -35,4 +35,8 @@
     <Folder Include="wwwroot\Font\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AgoraDatabase\AgoraDatabase.csproj" />
+  </ItemGroup>
+
 </Project>

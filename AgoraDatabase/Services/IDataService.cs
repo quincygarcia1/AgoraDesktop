@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace AgoraDatabase.Services
 {
-    internal interface IDataService<T>
+    // Interface used for services that interact with the database.
+    public interface IDataService<T>
     {
         Task<IEnumerable<T>> GetAll();
 
