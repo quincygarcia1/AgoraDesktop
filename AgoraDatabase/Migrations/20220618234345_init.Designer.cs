@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AgoraDatabase.Migrations
 {
     [DbContext(typeof(UserDataContext))]
-    [Migration("20220616035630_init")]
+    [Migration("20220618234345_init")]
     partial class init
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

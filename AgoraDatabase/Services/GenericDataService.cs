@@ -25,10 +25,10 @@ namespace AgoraDatabase.Services
             {
                 // Add a new entry into the database through the DB context.
                 // TODO: work with the await call to eleviate the deadlocking issue with the UI
-                EntityEntry<T> newEntity = await context.Set<T>().AddAsync(entity);
+                var newEntity = context.Set<T>().AddAsync(entity);
                 await context.SaveChangesAsync();
 
-                return newEntity.Entity;
+                return newEntity.Result.Entity;
             }
         }
 
@@ -51,27 +51,22 @@ namespace AgoraDatabase.Services
             }
             
         }
-
         public async Task<T> Get(string userName)
         {
             using (UserDataContext context = _contextFactory.CreateDbContext())
             {
                 // Find the user with Username username and return it's UserData object. If the Username doesn't exist in the database, return a default.
                 // TODO: work with the await calls here to prevent deadlock in the UI
-                T newEntity = await context.Set<T>().FirstOrDefaultAsync((e) => e.UserName == userName);
-                return newEntity;
+                var newEntity = context.Set<T>().FirstOrDefaultAsync((e) => e.UserName == userName);
+                
+                if  (newEntity == null || Object.Equals(newEntity, default(T)))
+                {
+                    return null;
+                }
+                return await newEntity.ConfigureAwait(false);
             }
         }
 
-        public async Task<IEnumerable<T>> GetAll()
-        {
-            // Get all users in the database. Return them as an async list (could change to fight deadlock)
-            using (UserDataContext context = _contextFactory.CreateDbContext())
-            {
-                IEnumerable<T> allEntities = await context.Set<T>().ToListAsync();
-                return allEntities;
-            }
-        }
 
         public async Task<T> Update(string newActivityString, T entity)
         {

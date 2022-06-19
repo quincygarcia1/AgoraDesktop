@@ -2,6 +2,7 @@
 @layout EmptyLayout
 @inject NavigationManager NavManager
 @using Models
+@using System.Windows
 
 <div class="login-form">
     <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit">
@@ -32,9 +33,29 @@
 
     private void HandleSubmit()
     {
-        NavManager.NavigateTo("/test");
-        UserData foundUser = dbService.Get(formModel.Username).Result;
 
+        var foundUser = dbService.Get(formModel.Username);
+        // If the username doesn't exist, return.
+        if (foundUser == null || foundUser.Result == null)
+        {
+            MessageBox.Show("Some text", "Some title", MessageBoxButton.OK);
+            return;
+        }
+        else
+        {
+            // the username exists, check the password.
+            UserData res = foundUser.Result;
+            if (res.Password == formModel.Password)
+            {
+                // if the password is correct go to the home page.
+                NavManager.NavigateTo("/test");
+            }
+            else
+            {
+                
+            }
+        }
+        
     }
 
     private void GoToRegister()

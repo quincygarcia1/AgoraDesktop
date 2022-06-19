@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace AgoraDatabase
 {
+    // DB context which provides the database with a set of UserData
     public class UserDataContext : DbContext
     {
 

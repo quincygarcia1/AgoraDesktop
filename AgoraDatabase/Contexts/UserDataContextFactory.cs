@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 
 namespace AgoraDatabase.Contexts
 {
+
+    // A factory pattern used to create new DB contexts for the login, register, and possibly delete user pages.
     public class UserDataContextFactory : IDesignTimeDbContextFactory<UserDataContext>
     {
         public UserDataContext CreateDbContext(string[] args = null)
