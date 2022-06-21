@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,7 +10,6 @@ namespace AgoraDatabase.Services
     // Interface used for services that interact with the database.
     public interface IDataService<T>
     {
-        Task<IEnumerable<T>> GetAll();
 
         Task<T> Get(string userName);
 

@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,6 +36,7 @@ namespace AgoraDesktop
         //       so that the code knows when to send a request to the server to stop the application timer and add the time spent to the database.
         ManagementEventWatcher processStartEvent = new ManagementEventWatcher("SELECT * FROM Win32_ProcessStartTrace");
         ManagementEventWatcher processStopEvent = new ManagementEventWatcher("SELECT * FROM Win32_ProcessStopTrace");
+        HubConnection connection;
         public MainWindow()
         {
             // establish a connection with the server when the server code is complete
@@ -45,9 +47,10 @@ namespace AgoraDesktop
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddWpfBlazorWebView();
+
+            connection = new HubConnectionBuilder().WithUrl("/UserHub").Build();
             
-            
-            
+
             Resources.Add("services", serviceCollection.BuildServiceProvider());
 
             // Added event Handlers for process starting and stopping
@@ -56,11 +59,17 @@ namespace AgoraDesktop
             processStopEvent.EventArrived += new EventArrivedEventHandler(processStopEvent_EventArrived);
             processStopEvent.Start();
 
+            startConnection();
             getActiveProcesses();
         }
 
         // Handler for when a process starts. Pass the process to the server so the server can start a timer for the process and can update the list
         // of stored processes.
+        private async void startConnection()
+        {
+            await connection.StartAsync();
+        }
+        
         void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
             

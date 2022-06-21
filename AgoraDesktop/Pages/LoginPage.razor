@@ -38,7 +38,9 @@
         // If the username doesn't exist, return.
         if (foundUser == null || foundUser.Result == null)
         {
-            MessageBox.Show("Some text", "Some title", MessageBoxButton.OK);
+            MessageBox.Show("Incorrect username or password", "Error", MessageBoxButton.OK);
+            formModel = new();
+
             return;
         }
         else
@@ -52,7 +54,8 @@
             }
             else
             {
-                
+                MessageBox.Show("Incorrect username or password", "Error", MessageBoxButton.OK);
+                formModel = new();
             }
         }
         

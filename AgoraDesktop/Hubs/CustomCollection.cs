@@ -13,7 +13,13 @@ namespace AgoraDesktop.Hubs
         private string processName;
         private string windowName;
         private int totalTime;
+        private DateTime timeStarted;
 
+        public DateTime StartTime
+        {
+            get { return timeStarted; }
+            set { timeStarted = value; }
+        }
         public Timer TimerAttribute
         {
             get { return timerAttribute; }
@@ -40,12 +46,18 @@ namespace AgoraDesktop.Hubs
             this.processName = processName;
             this.windowName = windowName;
             this.totalTime = 0;
+            this.timeStarted = DateTime.Now;
         }
 
         public void StopTimer()
         {
             this.timerAttribute.Enabled = false;
             this.timerAttribute.Dispose();
+        }
+
+        public void resetStarted()
+        {
+            this.timeStarted = DateTime.Now;
         }
     }
 }

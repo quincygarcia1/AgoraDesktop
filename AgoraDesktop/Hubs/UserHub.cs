@@ -14,10 +14,16 @@ namespace AgoraDesktop.Hubs
         // TODO: Keep a collection of connectionIDs, the login info corresponding to the connection and the timers for the
         // clients active processes
 
-        // Dictionary within a dictionary. keeps the connection ID as a key and a dictionary within
+        // Dictionary within a dictionary. keeps the username as a key and a dictionary within
         // PID key, list of process name, window name, timer, total time spent as the items within the second dictionary>
-        
+
         Dictionary<string, Dictionary<int, CustomCollection>> connectedUsers = new Dictionary<string, Dictionary<int, CustomCollection>>();
+
+        // Dictionary that keeps the current connectionID for each user logged in. Each page has a different connectionID so this dictionary will be updated
+        // on different connects
+
+        // Username key, connectionID value
+        Dictionary<string, string> correspondingConnections = new Dictionary<string, string>();
 
         // constant timer to be used to check whether processes are minimized.
         Timer minimizedTimer = new Timer(60000);
@@ -32,16 +38,17 @@ namespace AgoraDesktop.Hubs
         }
 
         // Method to notify a user that they've had an app minimized for a while
-        public async Task NotifyUser(object sender, ElapsedEventArgs e, string connectionId, string processName, int pid, string appName)
+        public async Task NotifyUser(object sender, ElapsedEventArgs e, string username, string connectionId, string processName, int pid, string appName)
         {
             // Increases the total timer by 30 minutes. Could change this at some point maybe
-            connectedUsers[connectionId][pid].TotalTime += (1000 * 60 * 30);
+            connectedUsers[username][pid].TotalTime += (1000 * 60 * 30);
+            connectedUsers[username][pid].resetStarted();
             await Clients.Client(connectionId).SendAsync("createTimeAlert", processName, pid, appName, connectedUsers[connectionId][pid].TotalTime);
 
         }
 
         // Method to add a process for a client's active applications. An entry with a clock should be started.
-        public async Task AddCurrentProcess(string processName, int pid, string appName)
+        public async Task AddCurrentProcess(string username, string processName, int pid, string appName)
         {
             // Intializes the timer to 30 mins
        
@@ -50,14 +57,16 @@ namespace AgoraDesktop.Hubs
             // The ID is passed to kill a single process if needed.
             
             
-            if (connectedUsers.ContainsKey(Context.ConnectionId))
+            if (correspondingConnections.ContainsKey(username))
             {
                 CustomCollection individualGroup = new CustomCollection(processName, appName);
-                individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
+                individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
                 individualGroup.TimerAttribute.Enabled = true;
-                connectedUsers[Context.ConnectionId].Add(pid, individualGroup);
+                connectedUsers[username].Add(pid, individualGroup);
+
                 // Send to the client that a new process is there. This is to live update the home page
                 // for new active processes.
+                Clients.Client(correspondingConnections[username]).SendAsync("AddToList", processName);
             }
             else
             {
@@ -88,19 +97,28 @@ namespace AgoraDesktop.Hubs
 
         // Method to be called when a user stops an application on their computer. Stop the process clock
         // and properly update the user's lifetime app history
-        public async Task RemoveCurrentProcess(string processName, int pid, string appName)
+        public async Task RemoveCurrentProcess(string username, string processName, int pid, string appName)
         {
-            if (connectedUsers.ContainsKey(Context.ConnectionId))
+            if (connectedUsers.ContainsKey(username))
             {
-                if (connectedUsers[Context.ConnectionId].ContainsKey(pid))
+                if (connectedUsers[username].ContainsKey(pid))
                 {
-                    connectedUsers[Context.ConnectionId][pid].TimerAttribute.Elapsed -= 
-                        (sender, e) => NotifyUser(sender, e, Context.ConnectionId, processName, pid, appName);
-                    connectedUsers[Context.ConnectionId][pid].StopTimer();
-                    connectedUsers[Context.ConnectionId].Remove(pid);
+                    double timeElapsed = (DateTime.Now - connectedUsers[username][pid].StartTime).TotalMilliseconds;
+                    connectedUsers[username][pid].TotalTime += (int)timeElapsed;
+
+                    // update the database
 
                     // Send to the client that a process is gone. This is to live update the home page
                     // for new active processes.
+                    Clients.Client(correspondingConnections[username]).SendAsync("RemoveFromList", processName);
+
+                    connectedUsers[username][pid].TimerAttribute.Elapsed -= 
+                        (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
+                    connectedUsers[username][pid].StopTimer();
+                    connectedUsers[username].Remove(pid);
+
+                    
+                    
                 }
             }
             else
@@ -112,15 +130,18 @@ namespace AgoraDesktop.Hubs
 
 
         // Method to transfer the app history of a client. Make sure to add their current session activity to the total.
-        public async Task GetClientAppHistory()
+        public async Task GetClientAppHistory(string username)
         {
-            
+            // Connect to the database
+            // Get the activity data
+            // add the current total time
+            // send the data to the user
         }
 
         // Quicksort algorithm to sort the app usage times from least to greatest. Used to organize the user display.
-        internal List<CustomCollection> SortCollections(string connectionId)
+        internal List<CustomCollection> SortCollections(string username)
         {
-            Dictionary<int, CustomCollection> focus = connectedUsers[connectionId];
+            Dictionary<int, CustomCollection> focus = connectedUsers[username];
             List<CustomCollection> listOfValues = focus.Values.ToList();
             CustomCollection pivot = listOfValues[listOfValues.Count - 1];
             return QuickSort(listOfValues.Count - 1, listOfValues, pivot);
@@ -156,34 +177,30 @@ namespace AgoraDesktop.Hubs
         }
 
         // Gets the timers for all the current processes. To be displayed on the home page.
-        public async Task GetCurrentApplications()
+        public async Task GetCurrentApplications(string username)
         {
             List<string> processNames = new List<string>();
             List<string> appNames = new List<string>();
 
-            List<CustomCollection> sortedUserDict = SortCollections(Context.ConnectionId);
+            List<CustomCollection> sortedUserDict = SortCollections(username);
 
             for (int i = 0; i < sortedUserDict.Count; i++)
             {
                 processNames.Add(sortedUserDict[i].ProcessName);
                 appNames.Add(sortedUserDict[i].WindowName);
             }
-            await Clients.Client(Context.ConnectionId).SendAsync("displayAppHistory", processNames, appNames);
+            await Clients.Client(correspondingConnections[username]).SendAsync("displayAppHistory", processNames, appNames);
         }
 
-        // Check client login information through a database. Create a new space in the collection for the client and their connection ID
-        public async Task VerifyLogin()
+        public async Task setConnectionId(string username)
         {
-
+            correspondingConnections[username] = Context.ConnectionId;
         }
 
-
-        // Creates a new user and updates the database accordingly
-        public async Task IntializeNewUser()
+        public async Task addSignedUser(string username)
         {
-            
+            connectedUsers[username] = new Dictionary<int, CustomCollection>();
         }
-
 
     }
 }
