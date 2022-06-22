@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDesktop", "AgoraDeskto
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleApp1", "ConsoleApp1\ConsoleApp1.csproj", "{84202582-52F0-4105-96C0-DEBFAEE665E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraServer", "AgoraServer\AgoraServer.csproj", "{CDEE3C76-AE78-4745-8854-2722C976FDCB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}.Release|Any CPU.Build.0 = Release|Any CPU
-		{84202582-52F0-4105-96C0-DEBFAEE665E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{84202582-52F0-4105-96C0-DEBFAEE665E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{84202582-52F0-4105-96C0-DEBFAEE665E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{84202582-52F0-4105-96C0-DEBFAEE665E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

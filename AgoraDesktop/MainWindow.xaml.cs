@@ -43,12 +43,16 @@ namespace AgoraDesktop
 
             InitializeComponent();
 
+            // Set up the local connection to the hub with automatic reconnecting.
+            connection = new HubConnectionBuilder()
+                .WithUrl("https://localhost:7142/userhub")
+                .WithAutomaticReconnect()
+                .Build();
+
             this.Title = "Agora";
 
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddWpfBlazorWebView();
-
-            connection = new HubConnectionBuilder().WithUrl("/UserHub").Build();
             
 
             Resources.Add("services", serviceCollection.BuildServiceProvider());
@@ -56,11 +60,12 @@ namespace AgoraDesktop
             // Added event Handlers for process starting and stopping
             processStartEvent.EventArrived += new EventArrivedEventHandler(processStartEvent_EventArrived);
             processStartEvent.Start();
-            processStopEvent.EventArrived += new EventArrivedEventHandler(processStopEvent_EventArrived);
+            processStopEvent.EventArrived += new EventArrivedEventHandler(processStopEvent_EventArrivedAsync);
             processStopEvent.Start();
 
+            // begin the connection to the hub.
             startConnection();
-            getActiveProcesses();
+            
         }
 
         // Handler for when a process starts. Pass the process to the server so the server can start a timer for the process and can update the list
@@ -70,7 +75,7 @@ namespace AgoraDesktop
             await connection.StartAsync();
         }
         
-        void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
+        async void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
             
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
@@ -103,18 +108,27 @@ namespace AgoraDesktop
             }
 
             // pass the data to the server to start the title
+            if (connection != null)
+            {
+                if ((App.Current as App) != null && (App.Current as App).UserName != null)
+                {
+                    await sendAdd((App.Current as App).UserName, processName, pid, processTitle);
+                    
+                }
+            }
         }
 
         // Handler to be used when a process is stopped. Pass the process name to the server so that the server knows the app has been closed.
         // Note for later reference: in the server or through client side keep a count of how many processes are made for an app
-        void processStopEvent_EventArrived(object sender, EventArrivedEventArgs e)
+        async void processStopEvent_EventArrivedAsync(object sender, EventArrivedEventArgs e)
         {
 
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+            string processTitle;
             try
             {
-                var processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
+                processTitle = Process.GetProcessById(pid).MainWindowTitle.ToString();
             }
             catch
             {
@@ -132,6 +146,24 @@ namespace AgoraDesktop
             }
 
             // Notify the server to stop the timer and record the usage 
+            if (connection != null)
+            {
+                if ((App.Current as App) != null && (App.Current as App).UserName != null)
+                {
+                    await sendDelete((App.Current as App).UserName, processName, pid, processTitle);
+                    
+                }
+            }
+        }
+
+        private async Task sendAdd(string username, string processname, int pid, string windowName)
+        {
+            await connection.SendAsync("AddCurrentProcess", username, pid, windowName);
+        }
+
+        private async Task sendDelete(string username, string processname, int pid, string windowName)
+        {
+            await connection.SendAsync("RemoveCurrentProcess", username, pid, windowName);
         }
 
         // Check which processes are minimized on initialization.
@@ -144,7 +176,7 @@ namespace AgoraDesktop
 
         // Method that should be run on start. Keep a data storage for the active processes so they can be passed to the server. Useful if the app
         // isn't being started on Windows login. When complete, send each unique process to the server.
-        void getActiveProcesses()
+        public async Task getActiveProcessesAsync()
         {
             foreach(Process p in Process.GetProcesses())
             {
@@ -155,6 +187,13 @@ namespace AgoraDesktop
                         currentNumProcesses.Add(p.Id, Tuple.Create(p.ProcessName.ToString(), p.MainWindowTitle.ToString()));
 
                         // pass the info to the server for the start-up process
+                        if (connection != null)
+                        {
+                            if ((App.Current as App) != null && (App.Current as App).UserName != null)
+                            {
+                                await connection.SendAsync("AddCurrentProcess", (App.Current as App).UserName, p.ProcessName.ToString(), p.Id, p.MainWindowTitle.ToString());
+                            }
+                        }
                     }
                     catch
                     {
