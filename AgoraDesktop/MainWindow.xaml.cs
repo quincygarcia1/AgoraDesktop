@@ -118,6 +118,7 @@ namespace AgoraDesktop
             }
         }
 
+
         // Handler to be used when a process is stopped. Pass the process name to the server so that the server knows the app has been closed.
         // Note for later reference: in the server or through client side keep a count of how many processes are made for an app
         async void processStopEvent_EventArrivedAsync(object sender, EventArrivedEventArgs e)

@@ -1,8 +1,11 @@
 ﻿@page "/"
 @layout EmptyLayout
 @inject NavigationManager NavManager
+
 @using Models
 @using System.Windows
+@using Microsoft.AspNetCore.SignalR.Client;
+
 
 <div class="login-form">
     <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit">
@@ -29,10 +32,21 @@
 @code{
     private IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
     private LoginModel formModel = new();
+    private HubConnection? connection;
 
-
-    private void HandleSubmit()
+    protected override async Task OnInitializedAsync()
     {
+        // Set up the local connection to the hub with automatic reconnecting.
+        connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7142/userhub")
+            .WithAutomaticReconnect()
+            .Build();
+        await connection.StartAsync();
+    }
+
+    private async Task HandleSubmit()
+    {
+
 
         var foundUser = dbService.Get(formModel.Username);
         // If the username doesn't exist, return.
@@ -49,6 +63,16 @@
             UserData res = foundUser.Result;
             if (res.Password == formModel.Password)
             {
+                (App.Current as App).UserName = res.UserName;
+                MainWindow mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
+                if (connection != null)
+                {
+                    await connection.SendAsync("addSignedUser", res.UserName);
+                }
+                if (mainWindow != null)
+                {
+                    await mainWindow.getActiveProcessesAsync();
+                }
                 // if the password is correct go to the home page.
                 NavManager.NavigateTo("/test");
             }

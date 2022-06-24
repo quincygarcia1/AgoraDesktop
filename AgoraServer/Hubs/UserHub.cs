@@ -68,7 +68,7 @@ namespace AgoraServer.Hubs
 
                 // Send to the client that a new process is there. This is to live update the home page
                 // for new active processes.
-                Clients.Client(correspondingConnections[username]).SendAsync("AddToList", processName);
+                await Clients.Client(correspondingConnections[username]).SendAsync("AddToList", processName);
             }
             else
             {
@@ -112,7 +112,7 @@ namespace AgoraServer.Hubs
 
                     // Send to the client that a process is gone. This is to live update the home page
                     // for new active processes.
-                    Clients.Client(correspondingConnections[username]).SendAsync("RemoveFromList", processName);
+                    await Clients.Client(correspondingConnections[username]).SendAsync("RemoveFromList", processName);
 
                     connectedUsers[username][pid].TimerAttribute.Elapsed -= 
                         (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
@@ -194,6 +194,8 @@ namespace AgoraServer.Hubs
             await Clients.Client(correspondingConnections[username]).SendAsync("displayAppHistory", processNames, appNames);
         }
 
+        
+
         public async Task setConnectionId(string username)
         {
             correspondingConnections[username] = Context.ConnectionId;
@@ -201,7 +203,12 @@ namespace AgoraServer.Hubs
 
         public async Task addSignedUser(string username)
         {
+            if (connectedUsers.Keys.ToList().Count == 0)
+            {
+                await StartGlobalTimer();
+            }
             connectedUsers[username] = new Dictionary<int, CustomCollection>();
+
         }
 
     }
