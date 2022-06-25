@@ -11,10 +11,14 @@ namespace AgoraServer.Hubs
     public class CustomCollection
     {
         private Timer timerAttribute;
+        // possible timer to be kept for when a process is minimized
+
+        private Timer minimizedTimer;
         private string processName;
         private string windowName;
         private int totalTime;
         private DateTime timeStarted;
+
 
         public DateTime StartTime
         {

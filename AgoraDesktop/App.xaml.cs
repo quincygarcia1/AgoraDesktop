@@ -13,5 +13,6 @@ namespace AgoraDesktop
     /// </summary>
     public partial class App : Application
     {
+        public string UserName { get; set; }
     }
 }

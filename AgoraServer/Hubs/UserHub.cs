@@ -8,6 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using Timer = System.Timers.Timer;
+using AgoraDatabase.Contexts;
+using AgoraDatabase.Services;
+using AgoraDatabase;
 
 namespace AgoraServer.Hubs
 {
@@ -29,7 +32,7 @@ namespace AgoraServer.Hubs
 
         // constant timer to be used to check whether processes are minimized.
         Timer minimizedTimer = new Timer(60000);
-        
+        IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
 
         public async Task StartGlobalTimer()
         {
@@ -138,6 +141,17 @@ namespace AgoraServer.Hubs
             // Get the activity data
             // add the current total time
             // send the data to the user
+            var foundUser = dbService.Get(username);
+            if (foundUser == null || foundUser.Result == null)
+            {
+                return;
+            }
+            UserData associatedAccount = foundUser.Result;
+            // Convert the activity string to a dictionary format
+            var dict = associatedAccount.ActivityString.Split(';')
+                .Select(section => section.Split('='))
+                .Where(section => section.Length == 2)
+                .ToDictionary(splitVal => splitVal[0], splitVal => splitVal[1]);
         }
 
         // Quicksort algorithm to sort the app usage times from least to greatest. Used to organize the user display.
@@ -200,6 +214,19 @@ namespace AgoraServer.Hubs
             }
             connectedUsers[username] = new Dictionary<int, CustomCollection>();
 
+        }
+
+        string GetAppName(string input)
+        {
+            int starting_index = 0;
+            for (int i = 5; i < input.Length; i++)
+            {
+                if ((input[i - 5] == ' ') && (input[i - 1] == input[i - 5]) && (input[i - 2] == '-') && (input[i - 2] == input[i - 3]))
+                {
+                    starting_index = i;
+                }
+            }
+            return input.Substring(starting_index, input.Length);
         }
 
     }

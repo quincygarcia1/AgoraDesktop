@@ -8,6 +8,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraServer", "AgoraServer\AgoraServer.csproj", "{CDEE3C76-AE78-4745-8854-2722C976FDCB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

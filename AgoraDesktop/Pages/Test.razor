@@ -6,7 +6,7 @@
 
 @code {
     private HubConnection? connection;
-    private List<string>? processInfoList;
+    private List<string> processInfoList = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -19,6 +19,8 @@
         connection.On<List<CustomCollection>>("UpdateList", (activities) =>
         {
         // get the current list of active processes to be displayed on the home page.
+            processInfoList.Clear();
+            ConvertToListStrings(activities);
         });
 
 
@@ -37,13 +39,47 @@
 
     // Covert the list of "CustomCollection" types to a list of strings that represents a programs name
     // Add it's current timer
-    private void convertToListStrings(List<CustomCollection> listOfActivities)
+    private void ConvertToListStrings(List<CustomCollection> listOfActivities)
     {
         for (int i = 0; i < listOfActivities.Count; i++)
         {
             string appName = listOfActivities[i].ProcessName;
             double appTime = listOfActivities[i].TotalTime + (DateTime.Now - listOfActivities[i].StartTime).TotalMilliseconds;
             // convert appTime to a representation of the amount of hours, minutes, and secodns that have passed.
+            double integerRep = Math.Floor(appTime / 60000);
+            int hours = (int)Math.Floor(integerRep / 60);
+            int minutes = (int)integerRep % 60;
+            string hourString;
+            string minuteString;
+            if (IntegerDegrees(hours) <= 1)
+            {
+                hourString = "0" + hours.ToString();
+            }
+            else
+            {
+                hourString = hours.ToString();
+            }
+            if (IntegerDegrees(minutes) <= 1)
+            {
+                minuteString = "0" + minutes.ToString();
+            }
+            else
+            {
+                minuteString = minutes.ToString();
+            }
+            processInfoList.Add(listOfActivities[i].ProcessName + " - " + hourString + ":" + minuteString);
+        }
+    }
+
+    private int IntegerDegrees(int time)
+    {
+        if ((time % 10) == time)
+        {
+            return 1;
+        }
+        else
+        {
+            return 1 + IntegerDegrees(time % 10);
         }
     }
 }
