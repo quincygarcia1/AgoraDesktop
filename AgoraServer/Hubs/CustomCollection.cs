@@ -8,7 +8,7 @@ using Timer = System.Timers.Timer;
 
 namespace AgoraServer.Hubs
 {
-    internal class CustomCollection
+    public class CustomCollection
     {
         private Timer timerAttribute;
         private string processName;

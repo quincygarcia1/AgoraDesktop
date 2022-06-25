@@ -160,7 +160,7 @@ namespace AgoraServer.Hubs
 
             for (int i = 0; i < endIndex; i++)
             {
-                if (collection[i].TotalTime < pivot.TotalTime)
+                if ((collection[i].TotalTime + (DateTime.Now - collection[i].StartTime).TotalMilliseconds) < (pivot.TotalTime + (DateTime.Now - pivot.StartTime).TotalMilliseconds))
                 {
                     smaller.Add(collection[i]);
                 } else
@@ -181,20 +181,10 @@ namespace AgoraServer.Hubs
         // Gets the timers for all the current processes. To be displayed on the home page.
         public async Task GetCurrentApplications(string username)
         {
-            List<string> processNames = new List<string>();
-            List<string> appNames = new List<string>();
-
-            List<CustomCollection> sortedUserDict = SortCollections(username);
-
-            for (int i = 0; i < sortedUserDict.Count; i++)
-            {
-                processNames.Add(sortedUserDict[i].ProcessName);
-                appNames.Add(sortedUserDict[i].WindowName);
-            }
-            await Clients.Client(correspondingConnections[username]).SendAsync("displayAppHistory", processNames, appNames);
+            List<CustomCollection> processList = SortCollections(username);
+            await Clients.Caller.SendAsync("UpdateList", processList);
+            
         }
-
-        
 
         public async Task setConnectionId(string username)
         {
