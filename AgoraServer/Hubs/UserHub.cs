@@ -186,6 +186,7 @@ namespace AgoraServer.Hubs
             
         }
 
+
         public async Task setConnectionId(string username)
         {
             correspondingConnections[username] = Context.ConnectionId;

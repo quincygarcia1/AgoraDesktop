@@ -1,8 +1,50 @@
 ﻿@page "/test"
 
+@using Microsoft.AspNetCore.SignalR.Client;
+
 <h3>Component1</h3>
 
 @code {
+    private HubConnection? connection;
+    private List<string>? processInfoList;
 
+    protected override async Task OnInitializedAsync()
+    {
+        // Set up the local connection to the hub with automatic reconnecting.
+        connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7142/userhub")
+            .WithAutomaticReconnect()
+            .Build();
+
+        connection.On<List<CustomCollection>>("UpdateList", (activities) =>
+        {
+        // get the current list of active processes to be displayed on the home page.
+        });
+
+
+        await connection.StartAsync();
+        if ((App.Current as App) != null && (App.Current as App).UserName != null)
+        {
+            await connection.SendAsync("setConnectionId", (App.Current as App).UserName);
+            await connection.SendAsync("GetCurrentApplications", (App.Current as App).UserName);
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    // Covert the list of "CustomCollection" types to a list of strings that represents a programs name
+    // Add it's current timer
+    private void convertToListStrings(List<CustomCollection> listOfActivities)
+    {
+        for (int i = 0; i < listOfActivities.Count; i++)
+        {
+            string appName = listOfActivities[i].ProcessName;
+            double appTime = listOfActivities[i].TotalTime + (DateTime.Now - listOfActivities[i].StartTime).TotalMilliseconds;
+            // convert appTime to a representation of the amount of hours, minutes, and secodns that have passed.
+        }
+    }
 }
 
