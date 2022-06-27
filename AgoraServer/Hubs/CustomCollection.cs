@@ -18,8 +18,17 @@ namespace AgoraServer.Hubs
         private string windowName;
         private int totalTime;
         private DateTime timeStarted;
+        private DateTime minimizedStarted;
 
-
+        public Timer MinimizedTimerAttribute
+        {
+            get { return timerAttribute; }
+        }
+        public DateTime MinimizedStarted
+        {
+            get { return minimizedStarted; }
+            set { minimizedStarted = value; }
+        }
         public DateTime StartTime
         {
             get { return timeStarted; }
@@ -63,6 +72,11 @@ namespace AgoraServer.Hubs
         public void resetStarted()
         {
             this.timeStarted = DateTime.Now;
+        }
+
+        public void resetMinimizedStartTime()
+        {
+
         }
     }
 }

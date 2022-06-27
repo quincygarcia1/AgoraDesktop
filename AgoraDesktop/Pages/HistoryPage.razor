@@ -7,4 +7,79 @@
 @code {
     private HubConnection? connection;
     private List<string> historyInfoList = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Set up the local connection to the hub with automatic reconnecting.
+        connection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7142/userhub")
+            .WithAutomaticReconnect()
+            .Build();
+
+        connection.On<Dictionary<string, string>>("GetClientAppHistory", (activityDict) =>
+        {
+        // get the current list of active processes to be displayed on the home page.
+            historyInfoList.Clear();
+            ConvertToListStrings(activityDict);
+        });
+
+
+        await connection.StartAsync();
+        if ((App.Current as App) != null && (App.Current as App).UserName != null)
+        {
+            await connection.SendAsync("setConnectionId", (App.Current as App).UserName);
+            await connection.SendAsync("GetClientAppHistory", (App.Current as App).UserName);
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    private void ConvertToListStrings(Dictionary<string, string> activityDictionary)
+    {
+        for (int i = 0; i < activityDictionary.Keys.ToList().Count; i++)
+        {
+            string appName = activityDictionary.Keys.ToList()[i];
+            double millisecondRepresentation = Int32.Parse(activityDictionary[activityDictionary.Keys.ToList()[i]]);
+
+            double integerRep = Math.Floor(millisecondRepresentation / 60000);
+            int hours = (int)Math.Floor(integerRep / 60);
+            int minutes = (int)integerRep % 60;
+            string hourString;
+            string minuteString;
+
+            if (IntegerDegrees(hours) <= 1)
+            {
+                hourString = "0" + hours.ToString();
+            }
+            else
+            {
+                hourString = hours.ToString();
+            }
+            if (IntegerDegrees(minutes) <= 1)
+            {
+                minuteString = "0" + minutes.ToString();
+            }
+            else
+            {
+                minuteString = minutes.ToString();
+            }
+            historyInfoList.Add(appName + " - " + hourString + ":" + minuteString);
+        }
+    }
+
+    // To do: Add this as a global method.
+    private int IntegerDegrees(int time)
+    {
+        if ((time % 10) == time)
+        {
+            return 1;
+        }
+        else
+        {
+            return 1 + IntegerDegrees(time % 10);
+        }
+    }
 }

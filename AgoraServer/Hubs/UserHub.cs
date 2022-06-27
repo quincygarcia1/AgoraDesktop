@@ -117,6 +117,18 @@ namespace AgoraServer.Hubs
                     connectedUsers[username][pid].TotalTime += (int)timeElapsed;
 
                     // update the database
+                    var foundUser = dbService.Get(username);
+                    var dict = ActivityDictionary(foundUser.Result.ActivityString);
+                    if (dict.ContainsKey(GetAppName(appName)))
+                    {
+                        dict[appName] = (Int32.Parse(dict[appName]) + timeElapsed).ToString();
+                    }
+                    else
+                    {
+                        dict.Add(appName, timeElapsed.ToString());
+                    }
+                    string updatedActivityString = string.Join(";", dict.Select(item => item.Key + "=" + item.Value).ToArray());
+                    await dbService.Update(updatedActivityString, foundUser.Result);
 
                     // Send to the client that a process is gone. This is to live update the home page
                     // for new active processes.
@@ -126,8 +138,6 @@ namespace AgoraServer.Hubs
                         (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
                     connectedUsers[username][pid].StopTimer();
                     connectedUsers[username].Remove(pid);
-
-                    
                     
                 }
             }
@@ -146,7 +156,7 @@ namespace AgoraServer.Hubs
             // Get the activity data
             // add the current total time
             // send the data to the user
-            List<string> result = new List<string>();
+            
             var foundUser = dbService.Get(username);
             if (foundUser == null || foundUser.Result == null)
             {
@@ -154,18 +164,20 @@ namespace AgoraServer.Hubs
             }
             UserData associatedAccount = foundUser.Result;
             // Convert the activity string to a dictionary format
-            var dict = associatedAccount.ActivityString.Split(';')
-                .Select(section => section.Split('='))
-                .Where(section => section.Length == 2)
-                .ToDictionary(splitVal => splitVal[0], splitVal => splitVal[1]);
+            var dict = ActivityDictionary(associatedAccount.ActivityString);
             for (int i = 0; i < connectedUsers[username].Keys.ToList().Count; i++)
             {
-                string processName = GetAppName(connectedUsers[username][connectedUsers[username].Keys.ToList()[i]].ProcessName);
-                if (dict.ContainsKey(processName))
+                var userObject = connectedUsers[username][connectedUsers[username].Keys.ToList()[i]];
+                string appName = GetAppName(userObject.WindowName);
+                if (dict.ContainsKey(appName))
                 {
-                    int historyTime = Int32.Parse(dict[processName]);
-                    int currentSessionTime = Int32.Parse(dict[processName].ToString());
-                    dict[processName] = (historyTime + currentSessionTime).ToString();
+                    int historyTime = Int32.Parse(dict[appName]);
+                    int currentSessionTime = (int)(userObject.TotalTime + (DateTime.Now - userObject.StartTime).TotalMilliseconds);
+                    dict[appName] = (historyTime + currentSessionTime).ToString();
+                }
+                else
+                {
+                    dict.Add(appName, ((int)(userObject.TotalTime + (DateTime.Now - userObject.StartTime).TotalMilliseconds)).ToString());
                 }
             }
             await Clients.Client(correspondingConnections[username]).SendAsync("UpdateHistoryList", dict);
@@ -244,6 +256,15 @@ namespace AgoraServer.Hubs
                 }
             }
             return input.Substring(starting_index, input.Length);
+        }
+
+        // Converts the activity string from the database to a dictionary of an app name and the corresponding time in milliseconds.
+        private Dictionary<string, string> ActivityDictionary(string activityString)
+        {
+            return activityString.Split(';')
+                .Select(section => section.Split('='))
+                .Where(section => section.Length == 2)
+                .ToDictionary(splitVal => splitVal[0], splitVal => splitVal[1]);
         }
 
     }
