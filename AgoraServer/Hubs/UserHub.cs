@@ -84,6 +84,11 @@ namespace AgoraServer.Hubs
         public async void SendUpdateRequest(object sender, ElapsedEventArgs e)
         {
             await IconicStatus();
+            for (int i = 0; i < connectedUsers.Keys.ToList().Count; i++)
+            {
+                await GetClientAppHistory(connectedUsers.Keys.ToList()[i]);
+                await GetClientAppHistory(connectedUsers.Keys.ToList()[i]);
+            }
         }
 
         // Request to be made to the client to update the minimized status of applications
@@ -141,6 +146,7 @@ namespace AgoraServer.Hubs
             // Get the activity data
             // add the current total time
             // send the data to the user
+            List<string> result = new List<string>();
             var foundUser = dbService.Get(username);
             if (foundUser == null || foundUser.Result == null)
             {
@@ -152,6 +158,17 @@ namespace AgoraServer.Hubs
                 .Select(section => section.Split('='))
                 .Where(section => section.Length == 2)
                 .ToDictionary(splitVal => splitVal[0], splitVal => splitVal[1]);
+            for (int i = 0; i < connectedUsers[username].Keys.ToList().Count; i++)
+            {
+                string processName = GetAppName(connectedUsers[username][connectedUsers[username].Keys.ToList()[i]].ProcessName);
+                if (dict.ContainsKey(processName))
+                {
+                    int historyTime = Int32.Parse(dict[processName]);
+                    int currentSessionTime = Int32.Parse(dict[processName].ToString());
+                    dict[processName] = (historyTime + currentSessionTime).ToString();
+                }
+            }
+            await Clients.Client(correspondingConnections[username]).SendAsync("UpdateHistoryList", dict);
         }
 
         // Quicksort algorithm to sort the app usage times from least to greatest. Used to organize the user display.

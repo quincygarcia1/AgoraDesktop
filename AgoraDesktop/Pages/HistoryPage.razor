@@ -1,0 +1,10 @@
+﻿@page "/apphistory"
+
+@using Microsoft.AspNetCore.SignalR.Client;
+
+<h3>HistoryPage</h3>
+
+@code {
+    private HubConnection? connection;
+    private List<string> historyInfoList = new List<string>();
+}
