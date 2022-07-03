@@ -12,6 +12,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraServer", "AgoraServer\
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AgoraActivity", "AgoraActivity\AgoraActivity.csproj", "{439BF0BD-B4A2-4E1E-B4EC-CE39110586F4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDEE3C76-AE78-4745-8854-2722C976FDCB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{439BF0BD-B4A2-4E1E-B4EC-CE39110586F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{439BF0BD-B4A2-4E1E-B4EC-CE39110586F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{439BF0BD-B4A2-4E1E-B4EC-CE39110586F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{439BF0BD-B4A2-4E1E-B4EC-CE39110586F4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

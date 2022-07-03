@@ -10,4 +10,8 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="6.0.6" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\AgoraDatabase\AgoraDatabase.csproj" />
+  </ItemGroup>
+
 </Project>

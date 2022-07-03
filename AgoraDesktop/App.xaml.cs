@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AgoraServer.Hubs;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -14,5 +15,6 @@ namespace AgoraDesktop
     public partial class App : Application
     {
         public string UserName { get; set; }
+        public List<CustomCollection> LoggedCollection { get; set; }
     }
 }

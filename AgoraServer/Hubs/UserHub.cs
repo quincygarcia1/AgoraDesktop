@@ -22,13 +22,13 @@ namespace AgoraServer.Hubs
         // Dictionary within a dictionary. keeps the username as a key and a dictionary within
         // PID key, list of process name, window name, timer, total time spent as the items within the second dictionary>
 
-        Dictionary<string, Dictionary<int, CustomCollection>> connectedUsers = new Dictionary<string, Dictionary<int, CustomCollection>>();
+        static Dictionary<string, Dictionary<int, CustomCollection>> connectedUsers { get; set; }
 
         // Dictionary that keeps the current connectionID for each user logged in. Each page has a different connectionID so this dictionary will be updated
         // on different connects
 
         // Username key, connectionID value
-        Dictionary<string, string> correspondingConnections = new Dictionary<string, string>();
+        static Dictionary<string, string> correspondingConnections = new Dictionary<string, string>();
 
         // constant timer to be used to check whether processes are minimized.
         Timer minimizedTimer = new Timer(60000);
@@ -67,18 +67,27 @@ namespace AgoraServer.Hubs
                 CustomCollection individualGroup = new CustomCollection(processName, appName);
                 individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
                 individualGroup.TimerAttribute.Enabled = true;
+                // create a static dictionary for the inner part of the dictionary storage.
+                if (connectedUsers[username].Count == 0)
+                {
+                    connectedUsers[username] = new Dictionary<int, CustomCollection>();
+                    connectedUsers[username].Clear();
+                }
                 connectedUsers[username].Add(pid, individualGroup);
+
 
                 // Send to the client that a new process is there. This is to live update the home page
                 // for new active processes.
+                
                 await Clients.Client(correspondingConnections[username]).SendAsync("AddToList", processName);
             }
             else
             {
                 // Method to be called if a process doesn't register. Called in the event of an error.
                 await Clients.Caller.SendAsync("FailedProcessReg", processName, pid, appName);
+                
             }
-
+            
         }
 
         public async void SendUpdateRequest(object sender, ElapsedEventArgs e)
@@ -87,8 +96,14 @@ namespace AgoraServer.Hubs
             for (int i = 0; i < connectedUsers.Keys.ToList().Count; i++)
             {
                 await GetClientAppHistory(connectedUsers.Keys.ToList()[i]);
-                await GetClientAppHistory(connectedUsers.Keys.ToList()[i]);
+                await GetCurrentApplications(connectedUsers.Keys.ToList()[i]);
+                await PageCommunication(connectedUsers.Keys.ToList()[i]);
             }
+        }
+
+        public async Task PageCommunication(string user)
+        {
+            await Clients.Client(correspondingConnections[user]).SendAsync("NotifyMainWindow");
         }
 
         // Request to be made to the client to update the minimized status of applications
@@ -187,6 +202,7 @@ namespace AgoraServer.Hubs
         internal List<CustomCollection> SortCollections(string username)
         {
             Dictionary<int, CustomCollection> focus = connectedUsers[username];
+            Console.WriteLine(focus.Count.ToString());
             List<CustomCollection> listOfValues = focus.Values.ToList();
             CustomCollection pivot = listOfValues[listOfValues.Count - 1];
             return QuickSort(listOfValues.Count - 1, listOfValues, pivot);
@@ -213,8 +229,23 @@ namespace AgoraServer.Hubs
             }
             List<CustomCollection> pivotList = new List<CustomCollection> { pivot };
             List<CustomCollection> result = new List<CustomCollection>(smaller.Count + pivotList.Count + larger.Count);
-            List<CustomCollection> smallerRes = QuickSort(smaller.Count - 1, smaller, smaller[smaller.Count - 1]);
-            List<CustomCollection> largerRes = QuickSort(larger.Count - 1, larger, larger[larger.Count - 1]);
+            List<CustomCollection> smallerRes;
+            List<CustomCollection> largerRes;
+            if (smaller.Count == 0)
+            {
+                smallerRes = new List<CustomCollection>();
+            }else
+            {
+                smallerRes = QuickSort(smaller.Count - 1, smaller, smaller[smaller.Count - 1]);
+            }
+            if (larger.Count == 0)
+            {
+                largerRes = new List<CustomCollection>();
+            }else
+            {
+                largerRes = QuickSort(larger.Count - 1, larger, larger[larger.Count - 1]);
+            }
+            
             result.AddRange(largerRes);
             result.AddRange(pivotList);
             result.AddRange(smallerRes);
@@ -224,8 +255,12 @@ namespace AgoraServer.Hubs
         // Gets the timers for all the current processes. To be displayed on the home page.
         public async Task GetCurrentApplications(string username)
         {
+            
             List<CustomCollection> processList = SortCollections(username);
-            await Clients.Caller.SendAsync("UpdateList", processList);
+            Console.WriteLine(processList.Count.ToString());
+            Console.WriteLine(Context.ConnectionId);
+            Console.WriteLine(Clients.Caller.ToString());
+            await Clients.Client(Context.ConnectionId).SendAsync("UpdateList", processList);
             
         }
 
@@ -235,14 +270,27 @@ namespace AgoraServer.Hubs
             correspondingConnections[username] = Context.ConnectionId;
         }
 
-        public async Task addSignedUser(string username)
+        public async Task AddSignedUser(string username)
         {
+            if (connectedUsers == null)
+            {
+                connectedUsers = new Dictionary<string, Dictionary<int, CustomCollection>>();
+                correspondingConnections = new Dictionary<string, string>();
+                
+            }
             if (connectedUsers.Keys.ToList().Count == 0)
             {
+                
+                connectedUsers.Clear();
+                correspondingConnections.Clear();
                 await StartGlobalTimer();
             }
-            connectedUsers[username] = new Dictionary<int, CustomCollection>();
-
+            
+            Dictionary<int, CustomCollection> dict = new Dictionary<int, CustomCollection>();
+            dict.Clear();
+            connectedUsers.Add(username, dict);
+            correspondingConnections.Add(username, Context.ConnectionId);
+            
         }
 
         string GetAppName(string input)

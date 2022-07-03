@@ -1,15 +1,28 @@
-﻿@page "/test"
+﻿@page "/home"
 
 @using Microsoft.AspNetCore.SignalR.Client;
+@using System.Windows;
 
-<h3>Component1</h3>
+<h3>Home</h3>
+
+<ul id="list-area">
+    @foreach (var process in displayList)
+    {
+        <li id="list-tab">@process</li>
+    }
+</ul>
+
 
 @code {
     private HubConnection? connection;
     private List<string> processInfoList = new List<string>();
+    
+    private List<string> displayList = new List<string>();
+    MainWindow mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
 
     protected override async Task OnInitializedAsync()
     {
+
         // Set up the local connection to the hub with automatic reconnecting.
         connection = new HubConnectionBuilder()
             .WithUrl("https://localhost:7142/userhub")
@@ -19,12 +32,19 @@
         connection.On<List<CustomCollection>>("UpdateList", (activities) =>
         {
         // get the current list of active processes to be displayed on the home page.
+            
             processInfoList.Clear();
             ConvertToListStrings(activities);
+            this.displayList = processInfoList;
+            InvokeAsync(StateHasChanged);
         });
 
 
+
         await connection.StartAsync();
+
+        
+
         if ((App.Current as App) != null && (App.Current as App).UserName != null)
         {
             await connection.SendAsync("setConnectionId", (App.Current as App).UserName);
@@ -43,7 +63,8 @@
     {
         for (int i = 0; i < listOfActivities.Count; i++)
         {
-            string appName = listOfActivities[i].ProcessName;
+            string appName = listOfActivities[i].WindowName;
+            
             double appTime = listOfActivities[i].TotalTime + (DateTime.Now - listOfActivities[i].StartTime).TotalMilliseconds;
             // convert appTime to a representation of the amount of hours, minutes, and secodns that have passed.
             double integerRep = Math.Floor(appTime / 60000);
@@ -68,6 +89,7 @@
                 minuteString = minutes.ToString();
             }
             processInfoList.Add(listOfActivities[i].WindowName + " - " + hourString + ":" + minuteString);
+            
         }
     }
 

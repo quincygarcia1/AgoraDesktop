@@ -17,6 +17,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using AgoraServer.Hubs;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,7 @@ namespace AgoraDesktop
     /// </summary>
     public partial class MainWindow : Window
     {
+        public List<string> sessionActivityList;
         Hashtable currentNumProcesses = new Hashtable();
 
         // TODO: create a data type, most likely a hash table, to count the number of processes that share a name. This will be used
@@ -72,6 +74,14 @@ namespace AgoraDesktop
         // of stored processes.
         private async void startConnection()
         {
+            connection.On<List<CustomCollection>>("UpdateList", (activities) =>
+            {
+                if ((App.Current as App) != null && (App.Current as App).UserName != null)
+                {
+                    (App.Current as App).LoggedCollection = activities;
+                }
+            });
+            
             await connection.StartAsync();
         }
         
@@ -112,8 +122,8 @@ namespace AgoraDesktop
             {
                 if ((App.Current as App) != null && (App.Current as App).UserName != null)
                 {
-                    await sendAdd((App.Current as App).UserName, processName, pid, processTitle);
-                    
+                    await connection.SendAsync("AddCurrentProcess", (App.Current as App).UserName, pid, processTitle);
+
                 }
             }
         }
@@ -151,20 +161,10 @@ namespace AgoraDesktop
             {
                 if ((App.Current as App) != null && (App.Current as App).UserName != null)
                 {
-                    await sendDelete((App.Current as App).UserName, processName, pid, processTitle);
-                    
+                    await connection.SendAsync("RemoveCurrentProcess", (App.Current as App).UserName, pid, processTitle);
+
                 }
             }
-        }
-
-        private async Task sendAdd(string username, string processname, int pid, string windowName)
-        {
-            await connection.SendAsync("AddCurrentProcess", username, pid, windowName);
-        }
-
-        private async Task sendDelete(string username, string processname, int pid, string windowName)
-        {
-            await connection.SendAsync("RemoveCurrentProcess", username, pid, windowName);
         }
 
         // Check which processes are minimized on initialization.
@@ -215,6 +215,20 @@ namespace AgoraDesktop
                 }
             }
             return input.Substring(starting_index, input.Length);
+        }
+
+        public async Task UpdateUserList()
+        {
+            if ((App.Current as App) != null && (App.Current as App).UserName != null)
+            {
+                await connection.SendAsync("GetCurrentApplications", (App.Current as App).UserName);
+            }
+                
+        }
+
+        public async Task AddUser()
+        {
+            await connection.SendAsync("AddSignedUser", (App.Current as App).UserName);
         }
 
         // TODO: Create a handler for the server when a time alert should be made. Time alerts should be made every 30 minutes that a

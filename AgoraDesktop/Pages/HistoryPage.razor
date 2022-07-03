@@ -2,7 +2,14 @@
 
 @using Microsoft.AspNetCore.SignalR.Client;
 
-<h3>HistoryPage</h3>
+<h3>Your App History</h3>
+
+<ul id="list-area">
+    @foreach (string app in historyInfoList)
+    {
+        <li id="list-tab">@app</li>
+    }
+</ul>
 
 @code {
     private HubConnection? connection;

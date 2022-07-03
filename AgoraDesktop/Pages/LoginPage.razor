@@ -65,16 +65,15 @@
             {
                 (App.Current as App).UserName = res.UserName;
                 MainWindow mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
-                if (connection != null)
-                {
-                    await connection.SendAsync("addSignedUser", res.UserName);
+                if (connection != null){
+                    await connection.SendAsync("AddSignedUser", res.UserName);
                 }
                 if (mainWindow != null)
                 {
                     await mainWindow.getActiveProcessesAsync();
                 }
                 // if the password is correct go to the home page.
-                NavManager.NavigateTo("/test");
+                NavManager.NavigateTo("/home");
             }
             else
             {
