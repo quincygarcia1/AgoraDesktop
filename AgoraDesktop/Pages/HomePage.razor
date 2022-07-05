@@ -39,15 +39,13 @@
             InvokeAsync(StateHasChanged);
         });
 
-
-
         await connection.StartAsync();
 
         
 
         if ((App.Current as App) != null && (App.Current as App).UserName != null)
         {
-            await connection.SendAsync("setConnectionId", (App.Current as App).UserName);
+            await connection.SendAsync("SetConnectionId", (App.Current as App).UserName);
             await connection.SendAsync("GetCurrentApplications", (App.Current as App).UserName);
         }
         else

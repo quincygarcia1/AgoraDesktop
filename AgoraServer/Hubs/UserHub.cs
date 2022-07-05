@@ -36,6 +36,7 @@ namespace AgoraServer.Hubs
 
         public async Task StartGlobalTimer()
         {
+            Console.WriteLine("timer started");
             minimizedTimer.Interval = 60000;
             minimizedTimer.Elapsed += SendUpdateRequest;
             minimizedTimer.AutoReset = true;
@@ -65,7 +66,7 @@ namespace AgoraServer.Hubs
             if (correspondingConnections.ContainsKey(username))
             {
                 CustomCollection individualGroup = new CustomCollection(processName, appName);
-                individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, username, Context.ConnectionId, processName, pid, appName);
+                individualGroup.TimerAttribute.Elapsed += (sender, e) => NotifyUser(sender, e, username, correspondingConnections[username], processName, pid, appName);
                 individualGroup.TimerAttribute.Enabled = true;
                 // create a static dictionary for the inner part of the dictionary storage.
                 if (connectedUsers[username].Count == 0)
@@ -95,22 +96,16 @@ namespace AgoraServer.Hubs
             await IconicStatus();
             for (int i = 0; i < connectedUsers.Keys.ToList().Count; i++)
             {
-                await GetClientAppHistory(connectedUsers.Keys.ToList()[i]);
+                
                 await GetCurrentApplications(connectedUsers.Keys.ToList()[i]);
-                await PageCommunication(connectedUsers.Keys.ToList()[i]);
+                
             }
         }
-
-        public async Task PageCommunication(string user)
-        {
-            await Clients.Client(correspondingConnections[user]).SendAsync("NotifyMainWindow");
-        }
-
         // Request to be made to the client to update the minimized status of applications
         public async Task IconicStatus()
         {
             // Method to be passed to all clients to receive the minimized status of each clients applications.
-            await Clients.All.SendAsync("CheckMinimized");
+            
 
         }
 
@@ -219,6 +214,7 @@ namespace AgoraServer.Hubs
 
             for (int i = 0; i < endIndex; i++)
             {
+                
                 if ((collection[i].TotalTime + (DateTime.Now - collection[i].StartTime).TotalMilliseconds) < (pivot.TotalTime + (DateTime.Now - pivot.StartTime).TotalMilliseconds))
                 {
                     smaller.Add(collection[i]);
@@ -257,15 +253,29 @@ namespace AgoraServer.Hubs
         {
             
             List<CustomCollection> processList = SortCollections(username);
-            Console.WriteLine(processList.Count.ToString());
-            Console.WriteLine(Context.ConnectionId);
-            Console.WriteLine(Clients.Caller.ToString());
-            await Clients.Client(Context.ConnectionId).SendAsync("UpdateList", processList);
+            
+            if (correspondingConnections[username] == "")
+            {
+                return;
+            }
+            await Clients.Client(correspondingConnections[username]).SendAsync("UpdateList", processList);
             
         }
 
+        public override Task OnDisconnectedAsync(Exception? exception)
+        {
+            Console.WriteLine("disconnected");
+            for (int i = 0; i < correspondingConnections.Keys.ToList().Count; i++)
+            {
+                if (correspondingConnections[correspondingConnections.Keys.ToList()[i]] == Context.ConnectionId)
+                {
+                    correspondingConnections[correspondingConnections.Keys.ToList()[i]] = "";
+                }
+            }
+            return base.OnDisconnectedAsync(exception);
+        }
 
-        public async Task setConnectionId(string username)
+        public async Task SetConnectionId(string username)
         {
             correspondingConnections[username] = Context.ConnectionId;
         }

@@ -133,7 +133,7 @@ namespace AgoraDesktop
         // Note for later reference: in the server or through client side keep a count of how many processes are made for an app
         async void processStopEvent_EventArrivedAsync(object sender, EventArrivedEventArgs e)
         {
-
+            
             int pid = Convert.ToInt32(e.NewEvent.Properties["ProcessID"].Value);
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
             string processTitle;
@@ -145,7 +145,10 @@ namespace AgoraDesktop
             {
                 return;
             }
-            
+            if (processTitle == "")
+            {
+                return;
+            }
 
             try
             {
@@ -162,6 +165,8 @@ namespace AgoraDesktop
                 if ((App.Current as App) != null && (App.Current as App).UserName != null)
                 {
                     await connection.SendAsync("RemoveCurrentProcess", (App.Current as App).UserName, pid, processTitle);
+                   
+                    
 
                 }
             }
