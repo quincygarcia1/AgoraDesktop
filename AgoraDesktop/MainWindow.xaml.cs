@@ -59,6 +59,8 @@ namespace AgoraDesktop
 
             Resources.Add("services", serviceCollection.BuildServiceProvider());
 
+            
+
             // Added event Handlers for process starting and stopping
             processStartEvent.EventArrived += new EventArrivedEventHandler(processStartEvent_EventArrived);
             processStartEvent.Start();
@@ -238,6 +240,8 @@ namespace AgoraDesktop
 
         // TODO: Create a handler for the server when a time alert should be made. Time alerts should be made every 30 minutes that a
         //       program is minimized.
+
+        
 
         void createTimeAlert()
         {
