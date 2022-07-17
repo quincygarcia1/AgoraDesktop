@@ -13,6 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraServer", "AgoraServer\
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketServer", "SocketServer\SocketServer.csproj", "{F7428A3F-1DD8-4460-81D1-E5B2EF380221}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
