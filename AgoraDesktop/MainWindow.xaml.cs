@@ -5,6 +5,8 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Management;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,18 +40,18 @@ namespace AgoraDesktop
         //       so that the code knows when to send a request to the server to stop the application timer and add the time spent to the database.
         ManagementEventWatcher processStartEvent = new ManagementEventWatcher("SELECT * FROM Win32_ProcessStartTrace");
         ManagementEventWatcher processStopEvent = new ManagementEventWatcher("SELECT * FROM Win32_ProcessStopTrace");
-        HubConnection connection;
+        private static Socket _soc = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        // Will be useful when an "exit program" button is added.
+        private bool programRunning = true;
+
         public MainWindow()
         {
             // establish a connection with the server when the server code is complete
 
             InitializeComponent();
 
-            // Set up the local connection to the hub with automatic reconnecting.
-            connection = new HubConnectionBuilder()
-                .WithUrl("https://localhost:7142/userhub")
-                .WithAutomaticReconnect()
-                .Build();
+            // Set up the local connection to the server with automatic reconnecting.
+            
 
             this.Title = "Agora";
 
@@ -68,25 +70,32 @@ namespace AgoraDesktop
             processStopEvent.Start();
 
             // begin the connection to the hub.
+            
             startConnection();
+            Thread serverReceiver = new Thread(GetServerInput);
+            serverReceiver.Start();
+        }
+
+        // Continuously attempt to connect to the server
+        private static async void startConnection()
+        {
+            while (!_soc.Connected)
+            {
+                try
+                {
+                    _soc.Connect(IPAddress.Loopback, 7313);
+                }
+                catch (SocketException)
+                {
+
+                }
+            }
+            
             
         }
 
         // Handler for when a process starts. Pass the process to the server so the server can start a timer for the process and can update the list
         // of stored processes.
-        private async void startConnection()
-        {
-            connection.On<List<CustomCollection>>("UpdateList", (activities) =>
-            {
-                if ((App.Current as App) != null && (App.Current as App).UserName != null)
-                {
-                    (App.Current as App).LoggedCollection = activities;
-                }
-            });
-            
-            await connection.StartAsync();
-        }
-        
         async void processStartEvent_EventArrived(object sender, EventArrivedEventArgs e)
         {
             
@@ -119,12 +128,14 @@ namespace AgoraDesktop
                 }
             }
 
-            // pass the data to the server to start the title
-            if (connection != null)
+            // pass the data to the server to start the timer
+            if (_soc.Connected)
             {
                 if ((App.Current as App) != null && (App.Current as App).UserName != null)
                 {
-                    await connection.SendAsync("AddCurrentProcess", (App.Current as App).UserName, pid, processTitle);
+                    string sendData = "AddCurrentProcess-" + String.Join(" $^% ", new string[] { (App.Current as App).UserName, pid.ToString(), processName, processTitle });
+                    byte[] buf = Encoding.ASCII.GetBytes(sendData);
+                    _soc.Send(buf);
 
                 }
             }
@@ -162,13 +173,13 @@ namespace AgoraDesktop
             }
 
             // Notify the server to stop the timer and record the usage 
-            if (connection != null)
+            if (_soc.Connected)
             {
                 if ((App.Current as App) != null && (App.Current as App).UserName != null)
                 {
-                    await connection.SendAsync("RemoveCurrentProcess", (App.Current as App).UserName, pid, processTitle);
-                   
-                    
+                    string sendData = "RemoveCurrentProcess-" + String.Join(" $^% ", new string[] { (App.Current as App).UserName, pid.ToString(), processName, processTitle });
+                    byte[] buf = Encoding.ASCII.GetBytes(sendData);
+                    _soc.Send(buf);
 
                 }
             }
@@ -195,11 +206,14 @@ namespace AgoraDesktop
                         currentNumProcesses.Add(p.Id, Tuple.Create(p.ProcessName.ToString(), p.MainWindowTitle.ToString()));
 
                         // pass the info to the server for the start-up process
-                        if (connection != null)
+                        if (_soc.Connected)
                         {
                             if ((App.Current as App) != null && (App.Current as App).UserName != null)
                             {
-                                await connection.SendAsync("AddCurrentProcess", (App.Current as App).UserName, p.ProcessName.ToString(), p.Id, p.MainWindowTitle.ToString());
+                                string sendData = "AddCurrentProcess-" + String.Join(" $^% ", new string[] { (App.Current as App).UserName, p.Id.ToString(), p.ProcessName.ToString(), p.MainWindowTitle.ToString() });
+                                byte[] buf = Encoding.ASCII.GetBytes(sendData);
+                                _soc.Send(buf);
+
                             }
                         }
                     }
@@ -226,16 +240,17 @@ namespace AgoraDesktop
 
         public async Task UpdateUserList()
         {
-            if ((App.Current as App) != null && (App.Current as App).UserName != null)
+            if (_soc.Connected)
             {
-                await connection.SendAsync("GetCurrentApplications", (App.Current as App).UserName);
+                if ((App.Current as App) != null && (App.Current as App).UserName != null)
+                {
+                    string sendData = "GetCurrentApplications-" + (App.Current as App).UserName;
+                    byte[] buf = Encoding.ASCII.GetBytes(sendData);
+                    _soc.Send(buf);
+
+                }
             }
                 
-        }
-
-        public async Task AddUser()
-        {
-            await connection.SendAsync("AddSignedUser", (App.Current as App).UserName);
         }
 
         // TODO: Create a handler for the server when a time alert should be made. Time alerts should be made every 30 minutes that a
@@ -243,7 +258,7 @@ namespace AgoraDesktop
 
         
 
-        void createTimeAlert()
+        void CreateTimeAlert()
         {
             // Should be encapsulated in a method called by the server. Buttons will be added to the reminder as well to either dismiss, kill the process
             // or kill the program
@@ -252,6 +267,40 @@ namespace AgoraDesktop
                 .AddText("*App* has been running for *Time*")
                 .AddText("Manage your applications in Agora")
                 .Show();
+        }
+
+        // Run an infinite loop to read input from the server
+        private void GetServerInput()
+        {
+            while (programRunning)
+            {
+                byte[] receivedBuf = new byte[1024];
+                // convert this to BeginReceive() to prevent socket blocking.
+                int bufLen = _soc.Receive(receivedBuf);
+                byte[] dataReceived = new byte[bufLen];
+                Array.Copy(receivedBuf, dataReceived, bufLen);
+                string result = Encoding.ASCII.GetString(dataReceived);
+
+                int dashIndex = result.IndexOf("-");
+                if (dashIndex == -1 || dashIndex + 1 > result.Length)
+                {
+                    continue;
+                }
+                string processInfo = result.Substring(dashIndex + 1);
+                string handlingMethod = result.Substring(0, dashIndex);
+
+                if (handlingMethod == "CreateTimeAlert")
+                {
+                    string[] separation = processInfo.Split(" $^% ");
+                    string processName = separation[0];
+                    int pid = Int32.Parse(separation[1]);
+                    string appName = separation[2];
+                    int millisecondCount = Int32.Parse(separation[3]);
+
+                    CreateTimeAlert();
+                }
+                
+            }
         }
     }
 }

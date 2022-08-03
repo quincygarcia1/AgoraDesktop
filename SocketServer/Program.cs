@@ -17,12 +17,18 @@ namespace SocketServer
         private static byte[] _buffer = new byte[1024];
         private static Socket _serverSoc = 
             new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        // Holds the active socket for every connected user.
         private static Dictionary<string, Socket> _correspondingSockets = new Dictionary<string, Socket>();
+
+        // Dictionary with the connected user information. Username key followed by a dictionary with PID keys followed by corresponding app information and
+        // a running timer.
         private static Dictionary<string, Dictionary<int, CustomCollection>> _connectedUsers = new Dictionary<string, Dictionary<int, CustomCollection>>();
+
+        // A backlog of sockets that don't yet have a corresponding username.
         private static List<Socket> _identificationBacklog = new List<Socket>();
 
         static Timer minimizedTimer = new Timer(60000);
-        IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
+        static IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
 
         static void Main(string[] args)
         {
@@ -42,7 +48,7 @@ namespace SocketServer
             _correspondingSockets.Add(username, userSoc);
         }
 
-        public static void AddCurrentProcess(object[] arr)
+        private static void AddCurrentProcess(object[] arr)
         {
 
             // Intializes the timer to 30 mins
@@ -51,6 +57,10 @@ namespace SocketServer
             // The alert will also ask whether the user wants to close all the entire program <appName> or just the specific process <processName>.
             // The ID is passed to kill a single process if needed.
             Socket soc = (Socket)arr[1];
+            if (!PollSocket(soc))
+            {
+                return;
+            }
             string fullString = (String)arr[0];
             // Encoding to be used when passing data to prevent errors when splitting
             string[] splitString = fullString.Split(" $^% ");
@@ -79,6 +89,10 @@ namespace SocketServer
 
                 // Send to the client that a new process is there. This is to live update the home page
                 // for new active processes.
+                if (!PollSocket(_correspondingSockets[username]))
+                {
+                    return;
+                }
                 SendStrings("AddToList-" + processName, _correspondingSockets[username]);
                 
             }
@@ -89,6 +103,64 @@ namespace SocketServer
 
             }
 
+        }
+
+        private async static void RemoveCurrentProcess(object[] arr)
+        {
+            string fullString = (String)arr[0];
+            // Encoding to be used when passing data to prevent errors when splitting
+            string[] splitString = fullString.Split(" $^% ");
+            if (splitString.Length != 4)
+            {
+                return;
+            }
+            string username = splitString[0];
+            int pid = Int32.Parse(splitString[1]);
+            string processName = splitString[2];
+            string appName = splitString[3];
+
+            if (!PollSocket(_correspondingSockets[username]))
+            {
+                return;
+            }
+
+            if (_connectedUsers.ContainsKey(username))
+            {
+                if (_connectedUsers[username].ContainsKey(pid))
+                {
+                    double timeElapsed = (DateTime.Now - _connectedUsers[username][pid].StartTime).TotalMilliseconds;
+                    _connectedUsers[username][pid].TotalTime += (int)timeElapsed;
+
+                    // update the database
+                    var foundUser = dbService.Get(username);
+                    var dict = ActivityDictionary(foundUser.Result.ActivityString);
+                    if (dict.ContainsKey(GetAppName(appName)))
+                    {
+                        dict[appName] = (Int32.Parse(dict[appName]) + timeElapsed).ToString();
+                    }
+                    else
+                    {
+                        dict.Add(appName, timeElapsed.ToString());
+                    }
+                    string updatedActivityString = string.Join(";", dict.Select(item => item.Key + "=" + item.Value).ToArray());
+                    await dbService.Update(updatedActivityString, foundUser.Result);
+
+                    // Send to the client that a process is gone. This is to live update the home page
+                    // for new active processes.
+                    
+                    SendStrings("RemoveFromList-" + processName, _correspondingSockets[username]);
+
+                    _connectedUsers[username][pid].TimerAttribute.Enabled = false;
+                    _connectedUsers[username][pid].StopTimer();
+                    _connectedUsers[username].Remove(pid);
+
+                }
+            }
+            else
+            {
+                // Method to be called if a process doesn't register. Called in the event of an error.
+                SendStrings("FailedProcessReg-" + processName, _correspondingSockets[username]);
+            }
         }
 
         public static async void NotifyUser(object sender, ElapsedEventArgs e, string username, Socket soc, string processName, int pid, string appName)
@@ -133,10 +205,15 @@ namespace SocketServer
                 activityString += (processList[i].WindowName + ":" + (processList[i].TotalTime + ((DateTime.Now - processList[i].StartTime).TotalMilliseconds)).ToString());
                 if (i != (processList.Count - 1))
                 {
-                    activityString += ",";
+                    activityString += " $^% ";
                 }
 
             }
+            if (!PollSocket(_correspondingSockets[username]))
+            {
+                return;
+            }
+            Console.WriteLine("testing");
             SendStrings("UpdateList-" + activityString, _correspondingSockets[username]);
         }
 
@@ -145,6 +222,10 @@ namespace SocketServer
         {
             string username = (string)arr[0];
             Socket callingSoc = (Socket)arr[1];
+            if (!PollSocket(callingSoc))
+            {
+                return;
+            }
             _correspondingSockets[username] = callingSoc;
         }
 
@@ -208,7 +289,7 @@ namespace SocketServer
         private static void Setup()
         {
             Console.WriteLine("setting up...");
-            _serverSoc.Bind(new IPEndPoint(IPAddress.Any, 777));
+            _serverSoc.Bind(new IPEndPoint(IPAddress.Any, 7313));
             _serverSoc.Listen(10);
             _serverSoc.BeginAccept(new AsyncCallback(AcceptCallback), null);
 
@@ -220,7 +301,7 @@ namespace SocketServer
             _identificationBacklog.Add(soc);
             soc.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), soc);
             _serverSoc.BeginAccept(new AsyncCallback(AcceptCallback), null);
-
+            Console.WriteLine("New client connected");
         }
 
         private static void ReceiveCallback(IAsyncResult ar)
@@ -232,33 +313,44 @@ namespace SocketServer
             Array.Copy(_buffer, tempbuf, dataReceived);
 
             string text = Encoding.ASCII.GetString(tempbuf);
-            int dashIndex = text.IndexOf('-');
-            if (dashIndex == -1)
-            {
-                return;
-            }
-            string methodString = text.Substring(0, dashIndex);
-            string parametersString;
-            if (dashIndex + 1 >= text.Length)
-            {
-                parametersString = "";
-            } else
-            {
-                parametersString = text.Substring(dashIndex + 1);
-            }
-            
-            
+            string[] allCommands = text.Split("\r\n");
+
+            Console.WriteLine(text);
+            Console.WriteLine(allCommands.Length);
             Type serverType = typeof(Program);
-            try
+            for (int i = 0; i < allCommands.Length; i++)
             {
-                MethodInfo definedMethod = serverType.GetMethod(methodString, BindingFlags.NonPublic | BindingFlags.Instance);
-                object[] arr = { parametersString, soc };
-                definedMethod.Invoke(definedMethod, arr);
+                string cmd = allCommands[i];
+
+                Console.WriteLine(cmd);
+
+                int dashIndex = cmd.IndexOf('-');
+                if (dashIndex == -1)
+                {
+                    return;
+                }
+                string methodString = cmd.Substring(0, dashIndex);
+                string parametersString;
+                if (dashIndex + 1 >= cmd.Length)
+                {
+                    parametersString = "";
+                }
+                else
+                {
+                    parametersString = cmd.Substring(dashIndex + 1);
+                }
+                try
+                {
+                    MethodInfo definedMethod = serverType.GetMethod(methodString, BindingFlags.NonPublic | BindingFlags.Instance);
+                    object[] arr = { parametersString, soc };
+                    definedMethod.Invoke(definedMethod, arr);
+                }
+                catch
+                {
+                    return;
+                }
             }
-            catch
-            {
-                return;
-            }
+            
         }
 
         private static void SendStrings(string text, Socket clientSoc)
@@ -268,10 +360,49 @@ namespace SocketServer
             clientSoc.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), clientSoc);
         }
 
+        private static bool PollSocket(Socket soc)
+        {
+            bool polledStatus = soc.Poll(1000, SelectMode.SelectRead);
+            bool availableStatus = (soc.Available == 0);
+
+            if ((polledStatus && availableStatus) || !soc.Connected)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+
+        }
+
         private static void SendCallback(IAsyncResult ar)
         {
             Socket soc = (Socket)ar.AsyncState;
             soc.EndSend(ar);
+        }
+
+        // Converts the activity string of a certain program to dictionary form.
+        private static Dictionary<string, string> ActivityDictionary(string activityString)
+        {
+            return activityString.Split(';')
+                .Select(section => section.Split('='))
+                .Where(section => section.Length == 2)
+                .ToDictionary(splitVal => splitVal[0], splitVal => splitVal[1]);
+        }
+
+        // Attempts to get the actual program name from the window name.
+        private static string GetAppName(string input)
+        {
+            int starting_index = 0;
+            for (int i = 5; i < input.Length; i++)
+            {
+                if ((input[i - 5] == ' ') && (input[i - 1] == input[i - 5]) && (input[i - 2] == '-') && (input[i - 2] == input[i - 3]))
+                {
+                    starting_index = i;
+                }
+            }
+            return input.Substring(starting_index, input.Length);
         }
     }
 }

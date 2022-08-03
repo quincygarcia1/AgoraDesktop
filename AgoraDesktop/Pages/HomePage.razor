@@ -2,6 +2,11 @@
 
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.Windows;
+@using System.Net.Sockets;
+@using System.Net
+@using System.Text
+@using System.Threading
+@using System.Collections
 
 <h3>Home</h3>
 
@@ -14,81 +19,54 @@
 
 
 @code {
-    private HubConnection? connection;
-    private List<string> processInfoList = new List<string>();
-    
-    private List<string> displayList = new List<string>();
+    private static byte[] _buffer = new byte[1024];
+    private Socket _connection = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+    bool inUse = false;
+    static string[] currentServerCommmand = null;
+
+    private string[] displayList = {};
     MainWindow mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
 
     protected override async Task OnInitializedAsync()
     {
-
         // Set up the local connection to the hub with automatic reconnecting.
-        connection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7142/userhub")
-            .WithAutomaticReconnect()
-            .Build();
-
-        connection.On<List<CustomCollection>>("UpdateList", (activities) =>
+        while (!_connection.Connected)
         {
-        // get the current list of active processes to be displayed on the home page.
-            
-            processInfoList.Clear();
-            ConvertToListStrings(activities);
-            this.displayList = processInfoList;
-            InvokeAsync(StateHasChanged);
-        });
+            try
+            {
+                _connection.Connect(IPAddress.Loopback, 7313);
+            }
+            catch
+            {
 
-        await connection.StartAsync();
-
+            }
+        }
         
-
         if ((App.Current as App) != null && (App.Current as App).UserName != null)
         {
-            await connection.SendAsync("SetConnectionId", (App.Current as App).UserName);
-            await connection.SendAsync("GetCurrentApplications", (App.Current as App).UserName);
+            if (_connection.Connected)
+            {
+                byte[] buf = Encoding.ASCII.GetBytes("SetConnectionId-" + (App.Current as App).UserName + "\r\n");
+                _connection.Send(buf);
+
+
+                byte[] callBuf = Encoding.ASCII.GetBytes("GetCurrentApplications-" + (App.Current as App).UserName + "\r\n");
+                _connection.Send(callBuf);
+
+            }
         }
         else
         {
             return;
         }
-
+        Thread serverHandling = new Thread(GetServerInput);
+        serverHandling.Start();
     }
 
-    // Covert the list of "CustomCollection" types to a list of strings that represents a programs name
-    // Add it's current timer
-    private void ConvertToListStrings(List<CustomCollection> listOfActivities)
+    private void UpdateList(string[] updatedList)
     {
-        for (int i = 0; i < listOfActivities.Count; i++)
-        {
-            string appName = listOfActivities[i].WindowName;
-            
-            double appTime = listOfActivities[i].TotalTime + (DateTime.Now - listOfActivities[i].StartTime).TotalMilliseconds;
-            // convert appTime to a representation of the amount of hours, minutes, and secodns that have passed.
-            double integerRep = Math.Floor(appTime / 60000);
-            int hours = (int)Math.Floor(integerRep / 60);
-            int minutes = (int)integerRep % 60;
-            string hourString;
-            string minuteString;
-            if (IntegerDegrees(hours) <= 1)
-            {
-                hourString = "0" + hours.ToString();
-            }
-            else
-            {
-                hourString = hours.ToString();
-            }
-            if (IntegerDegrees(minutes) <= 1)
-            {
-                minuteString = "0" + minutes.ToString();
-            }
-            else
-            {
-                minuteString = minutes.ToString();
-            }
-            processInfoList.Add(listOfActivities[i].WindowName + " - " + hourString + ":" + minuteString);
-            
-        }
+        this.displayList = updatedList;
+        InvokeAsync(StateHasChanged);
     }
 
     private int IntegerDegrees(int time)
@@ -100,6 +78,68 @@
         else
         {
             return 1 + IntegerDegrees(time % 10);
+        }
+    }
+
+    private void GetServerInput()
+    {
+        while (_connection.Connected)
+        {
+            ArrayList soclist = new ArrayList()
+            {
+                _connection
+            };
+            inUse = true;
+            Socket.Select(soclist, null, null, -1);
+            if (soclist.Count == 0)
+            {
+                inUse = false;
+                continue;
+            }
+            // Convert this to begin receive.
+            _connection.BeginReceive(_buffer, 0, _buffer.Length, SocketFlags.None, new AsyncCallback(ReceiveCallback), _connection);
+            if (currentServerCommmand != null)
+            {
+                UpdateList(currentServerCommmand);
+            }
+            inUse = false;
+        }
+    }
+
+    private static void ReceiveCallback(IAsyncResult ar)
+    {
+        Socket soc = (Socket)ar.AsyncState;
+        int dataReceived;
+        try
+        {
+            dataReceived = soc.EndReceive(ar);
+        }
+        catch
+        {
+            return;
+        }
+
+
+        if (dataReceived == 0){
+            return;
+        }
+
+        byte[] tempBuf = new byte[dataReceived];
+        Array.Copy(_buffer, tempBuf, dataReceived);
+        string result = Encoding.ASCII.GetString(tempBuf);
+
+        int dashIndex = result.IndexOf("-");
+        if (dashIndex == -1 || dashIndex + 1 > result.Length)
+        {
+            return;
+        }
+        string processInfo = result.Substring(dashIndex + 1);
+        string handlingMethod = result.Substring(0, dashIndex);
+
+        if (handlingMethod[0] == 'U')
+        {
+            string[] listOfProcesses = processInfo.Split(" $^% ");
+            currentServerCommmand = listOfProcesses;
         }
     }
 }

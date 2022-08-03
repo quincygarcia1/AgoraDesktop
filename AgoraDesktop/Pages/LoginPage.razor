@@ -32,22 +32,25 @@
 @code{
     private IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
     private LoginModel formModel = new();
-    private HubConnection? connection;
+    private Socket _connection = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
     protected override async Task OnInitializedAsync()
     {
-        // Set up the local connection to the hub with automatic reconnecting.
-        connection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7142/userhub")
-            .WithAutomaticReconnect()
-            .Build();
-        await connection.StartAsync();
+        while (!_connection.Connected)
+        {
+            try
+            {
+                _connection.Connect(IPAddress.Loopback, 7313);
+            }
+            catch
+            {
+                // pass
+            }
+        }
     }
 
     private async Task HandleSubmit()
     {
-
-
         var foundUser = dbService.Get(formModel.Username);
         // If the username doesn't exist, return.
         if (foundUser == null || foundUser.Result == null)
@@ -59,14 +62,15 @@
         }
         else
         {
-            // the username exists, check the password.
+            // The username exists, check the password.
             UserData res = foundUser.Result;
             if (res.Password == formModel.Password)
             {
                 (App.Current as App).UserName = res.UserName;
                 MainWindow mainWindow = Application.Current.Windows.OfType<MainWindow>().FirstOrDefault();
-                if (connection != null){
-                    await connection.SendAsync("AddSignedUser", res.UserName);
+                if (_connection.Connected){
+                    byte[] buf = Encoding.ASCII.GetBytes("AddSignedUser-" + res.UserName);
+                    _connection.Send(buf);
                 }
                 if (mainWindow != null)
                 {
