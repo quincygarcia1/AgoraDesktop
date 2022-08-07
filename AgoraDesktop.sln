@@ -4,6 +4,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.2.32519.379
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDesktop", "AgoraDesktop\AgoraDesktop.csproj", "{A80DB2A2-EF5F-4486-B4C2-D55661341087}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8C073B3E-22A6-4175-A678-77F876FDAB5C} = {8C073B3E-22A6-4175-A678-77F876FDAB5C}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraDatabase", "AgoraDatabase\AgoraDatabase.csproj", "{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}"
 EndProject
@@ -12,7 +15,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraServer", "AgoraServer\
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SocketServer", "SocketServer\SocketServer.csproj", "{F7428A3F-1DD8-4460-81D1-E5B2EF380221}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SocketServer", "SocketServer\SocketServer.csproj", "{F7428A3F-1DD8-4460-81D1-E5B2EF380221}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AgoraAPIs", "AgoraAPIs\AgoraAPIs.csproj", "{8C073B3E-22A6-4175-A678-77F876FDAB5C}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06} = {8FD1EAAB-FC90-4B0A-B5C9-6B0B42F4EC06}
 	EndProjectSection
@@ -39,6 +47,10 @@ Global
 		{F7428A3F-1DD8-4460-81D1-E5B2EF380221}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7428A3F-1DD8-4460-81D1-E5B2EF380221}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7428A3F-1DD8-4460-81D1-E5B2EF380221}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C073B3E-22A6-4175-A678-77F876FDAB5C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C073B3E-22A6-4175-A678-77F876FDAB5C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C073B3E-22A6-4175-A678-77F876FDAB5C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C073B3E-22A6-4175-A678-77F876FDAB5C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

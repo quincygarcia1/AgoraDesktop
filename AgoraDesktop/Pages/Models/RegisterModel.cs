@@ -16,6 +16,9 @@ namespace AgoraDesktop.Pages.Models
         [Required]
         [MaxLength(30, ErrorMessage = "Password too long.")]
         [MinLength(8, ErrorMessage = "Password too short.")]
+        // Password Regex to validate a secure password.
+        [RegularExpression(@"^(?=.*[A-Z])(?=.*\d)(?=.*[@$! % *#?&])[A-Za-z\d@$!%*#?&]{8,}$",
+            ErrorMessage = "Password should have: \none capital letter\none number\none special character")]
         public string? Password { get; set; }
 
         [Required]

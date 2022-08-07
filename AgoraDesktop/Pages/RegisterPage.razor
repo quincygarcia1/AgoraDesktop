@@ -3,13 +3,14 @@
 @inject NavigationManager NavManager
 @using Models
 @using System.Windows
+@using System.Net.Http.Headers;
+@using System.Net.Http;
+@using System.Net;
 
 <div class="login-form">
     <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
-
-        
 
         <legend class="login-text">Create Account</legend>
         <div class="field-section">
@@ -32,25 +33,54 @@
 
 @code {
     // Create a way to communicate with the database
-    private IDataService<UserData> dbService = new GenericDataService<UserData>(new UserDataContextFactory());
     // Create the model for the register form
     private RegisterModel formModel = new();
-    
+    static HttpClient dbClient = new HttpClient();
 
     private void HandleSubmit()
     {
-        if (dbService.Get(formModel.Username) != null)
+        if (GetUserAsync(formModel.Username) != null)
         {
             MessageBox.Show("Username already taken.", "Error", MessageBoxButton.OK);
             formModel = new();
             return;
         }
         // Causes deadlock. Need to change the data service methods to not conflict with the UI
-        dbService.Create(new UserData { UserName = formModel.Username, Password = formModel.Password, ActivityString = "" });
-        
+        try
+        {
+            CreateUserAsync(new UserData { UserName = formModel.Username, Password = formModel.Password, ActivityString = "" });
+        } catch (Exception)
+        {
+            this.formModel = new();
+            return;
+        }
+
         NavManager.NavigateTo("/");
     }
 
-    
+    protected override async Task OnInitializedAsync()
+    {
+        dbClient.BaseAddress = new Uri("http://localhost:5098/");
+        dbClient.DefaultRequestHeaders.Accept.Clear();
+        dbClient.DefaultRequestHeaders.Accept.Add(
+                new MediaTypeWithQualityHeaderValue("application/json"));
+    }
 
+    static async void CreateUserAsync(UserData newUser)
+    {
+        HttpResponseMessage response = await dbClient.PostAsJsonAsync(
+            "api/userdata", newUser);
+        response.EnsureSuccessStatusCode();
+    }
+
+    static async Task<UserData> GetUserAsync(string username)
+    {
+        UserData potentialUser = null;
+        HttpResponseMessage response = await dbClient.GetAsync($"api/userdata/{username}");
+        if (response.IsSuccessStatusCode)
+        {
+            potentialUser = await response.Content.ReadAsAsync<UserData>();
+        }
+        return potentialUser;
+    }
 }

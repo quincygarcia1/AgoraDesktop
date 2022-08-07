@@ -86,11 +86,17 @@
 
             }
         }
-        
+
     }
 
     private void GoToRegister()
     {
         NavManager.NavigateTo("/registerPage");
+    }
+
+    private Task<UserData> GetUserData(string username)
+    {
+        UserData potentialUser = null;
+        return null;
     }
 }
